@@ -1,6 +1,18 @@
 import { Parser, ParserResult } from "./types";
 import { pushErrorStack } from "./utils";
 
+// 2 parsers
+export function seq<T1, T2>(
+  _parsers: [Parser<T1>, Parser<T2>],
+  _outerMessage?: string
+): Parser<[T1, T2]>;
+
+// 3 parsers
+export function seq<T1, T2, T3>(
+  _parsers: [Parser<T1>, Parser<T2>, Parser<T3>],
+  _outerMessage?: string
+): Parser<[T1, T2, T3]>;
+
 // 4 parsers
 export function seq<T1, T2, T3, T4>(
   _parsers: [Parser<T1>, Parser<T2>, Parser<T3>, Parser<T4>],
