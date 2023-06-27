@@ -24,6 +24,9 @@ import {
   pair,
   triplet,
   either,
+  Result,
+  pushErrorStack,
+  errRes,
 } from "src";
 import {
   isAllowedCommentChar,
@@ -36,74 +39,48 @@ import {
 } from "./char";
 import { DateTime, TOMLArray, TOMLValue, TOMLTable } from "./types";
 
-type KeyPath = {
-  [string: string]: KeyPath | any;
-};
-
 let rootValue: TOMLTable = {};
 let currentValue: TOMLTable = rootValue;
-let keyPath = {} as KeyPath;
 
 const isObject = (value: unknown): value is object =>
   Object.prototype.toString.call(value) === "[object Object]";
 
-const checkExistingKey = (key: KeyPath, paths: string[]) => {
+const getTableValue = (
+  table: TOMLTable,
+  paths: string[],
+  isArrayTable = false
+): Result<{ value: TOMLArray | TOMLTable }, {}> => {
   const len = paths.length;
-  let cur = key;
+  let cur = table;
   for (let i = 0; i < len; i++) {
     const path = paths[i];
     if (path in cur) {
-      cur = cur[path];
-      if (isObject(cur) || Array.isArray(cur)) {
-        continue;
+      const value = cur[path];
+      if (Array.isArray(value) || isObject(value)) {
+        if (Object.isFrozen(value)) {
+          return { ok: false };
+        }
       }
-      return false;
+      if (Array.isArray(value)) {
+        if (i === len - 1 && isArrayTable) {
+          return { ok: true, value };
+        }
+        return { ok: false };
+      }
+      if (!isObject(value)) {
+        return { ok: false };
+      }
+    } else {
+      if (i === len - 1 && isArrayTable) {
+        cur[path] = [];
+        return { ok: true, value: cur[path] as TOMLArray };
+      }
+      cur[path] = {};
     }
+    cur = cur[path] as TOMLTable;
   }
-  return true;
+  return { ok: true, value: cur };
 };
-
-// const getTableByPaths = (value: TOMLTable, paths: string[]) => {
-//   const len = paths.length;
-//   let cur: TOMLTable = value;
-//   for (let i = 0; i < len; i++) {
-//     const path = paths[i];
-//     if (path in cur) {
-//       cur = cur[path] as TOMLTable;
-//       if(!isObject(cur) && !Array.isArray(cur)) {
-//         return false;
-//       }
-//     } else {
-//       cur[path] = {};
-//     }
-//   }
-//   return cur;
-// }
-
-// const setTableValue = (
-//   table: TOMLTable,
-//   key: string,
-//   value: TOMLValue,
-//   keyPath: KeyPath
-// ):  => {
-//   const paths = key.split(".");
-//   const len = paths.length;
-//   let cur = table;
-//   if (!checkKeyPath(keyPath, paths)) {
-//     return false;
-//   }
-//   for (let i = 0; i < len; i++) {
-//     const path = paths[i];
-//     if (i === len - 1) {
-//       cur[path] = value;
-//     } else if (path in cur) {
-//       cur = cur[path] as TOMLTable;
-//     } else {
-//       cur[path] = {};
-//       cur = cur[path] as TOMLTable;
-//     }
-//   }
-// };
 
 const questionMark = tag('"');
 const apostrophe = tag("'");
@@ -372,16 +349,30 @@ const array = map(
 ) as Parser<TOMLArray>;
 
 // Standard Table
-const stdTable = map(triplet(stdTableOpen, key, stdTableClose), (value) => {
-  const [, key] = value;
-  setTableValue(rootValue, key, {}, keyPath);
-});
+const stdTable = mapRes(
+  delimited(stdTableOpen, key, stdTableClose),
+  (result) => {
+    if (result.ok) {
+      const key = result.value;
+      const paths = key.split(".");
+      const res = getTableValue(rootValue, paths);
+      if (res.ok) {
+        currentValue = res.value as TOMLTable;
+        return {
+          ...result,
+          value: null,
+        };
+      } else {
+        return pushErrorStack(errRes(result.rest), `key ${key} already exists`);
+      }
+    }
+    return result;
+  }
+);
 
 // Inline Table
-const inlineTableKeyval = map(
-  triplet(wsCommentNewline, keyval, wsCommentNewline),
-  (value) => value[1]
-);
+const inlineTableKeyval = delimited(wsCommentNewline, keyval, wsCommentNewline);
+
 const inlineTableKeyvals = map(
   pair(
     pair(
@@ -404,24 +395,20 @@ const inlineTable = mapRes(
     if (result.ok) {
       const [, keyvals] = result.value;
       const table: TOMLTable = {};
-      for (const [key, value] of keyvals) {
+      for (const [key, val] of keyvals) {
         const paths = key.split(".");
-        const len = paths.length;
-        let cur = table;
-        for (let i = 0; i < len; i++) {
-          const path = paths[i];
-          if (i === len - 1) {
-            cur[path] = value;
-          } else if (path in cur) {
-            // TODO: duplicate key
-            cur = cur[path] as TOMLTable;
-          } else {
-            cur[path] = {};
-            cur = cur[path] as TOMLTable;
-          }
+        const lastPath = paths.pop();
+        const res = getTableValue(table, paths);
+        if (res.ok) {
+          (res.value as TOMLTable)[lastPath!] = val;
+        } else {
+          return pushErrorStack(
+            errRes(result.rest),
+            `key ${key} already exists`
+          );
         }
-        table[key] = value;
       }
+      Object.freeze(table);
       return { ...result, value: table };
     }
     return result;
@@ -429,12 +416,27 @@ const inlineTable = mapRes(
 );
 
 // Array Table
-const arrayTable = map(
-  triplet(arrayTableOpen, key, arrayTableClose),
-  (value) => ({
-    type: "array",
-    value: value[1],
-  })
+const arrayTable = mapRes(
+  delimited(arrayTableOpen, key, arrayTableClose),
+  (result) => {
+    if (result.ok) {
+      const key = result.value;
+      const paths = key.split(".");
+      const res = getTableValue(rootValue, paths, true);
+      if (res.ok) {
+        const newTable: TOMLTable = {};
+        (res.value as TOMLArray).push(newTable);
+        currentValue = newTable;
+        return {
+          ...result,
+          value: null,
+        };
+      } else {
+        return pushErrorStack(errRes(result.rest), `key ${key} already exists`);
+      }
+    }
+    return result;
+  }
 );
 
 // Table
@@ -446,19 +448,27 @@ function val(input: string) {
   );
 }
 
-// const expression = alt(
-//   seq(space0, opt(comment)),
-//   seq(space0, keyval, space0, opt(comment)),
-//   seq(space0, table, space0, opt(comment))
-// );
-
 const ignoreLine = pair(space0, opt(comment));
 
-const keyvalLine = map(
+const keyvalLine = mapRes(
   seq([space0, keyval, space0, opt(comment)]),
-  ([, [key, value]]) => {
-    setTableValue(currentValue, key, value, keyPath);
-    return null;
+  (result) => {
+    if (result.ok) {
+      const [, [key, value]] = result.value;
+      const paths = key.split(".");
+      const lastPath = paths.pop();
+      const res = getTableValue(currentValue, paths, false);
+      if (res.ok) {
+        (res.value as TOMLTable)[lastPath!] = value;
+        return {
+          ...result,
+          value: null,
+        };
+      } else {
+        return pushErrorStack(errRes(result.rest), `key ${key} already exists`);
+      }
+    }
+    return result;
   }
 );
 
@@ -466,57 +476,6 @@ const tableLine = map(
   seq([space0, table, space0, opt(comment)]),
   ([, value]) => value
 );
-// const expression = (input: string) => {
-//   const keyvalRes = keyvalLine(input);
-//   if (keyvalRes.ok) {
-//     const [key, value] = keyvalRes.value;
-//     // TODO: handle array of tables
-//     setTableValue(currentValue as TOMLTable, key, value);
-//     return {
-//       ...keyvalRes,
-//       value: null,
-//     };
-//   }
-//   const tableRes = tableLine(input);
-//   if (tableRes.ok) {
-//     const { type, value } = tableRes.value;
-//     let cur = rootValue;
-//     const paths = value.split(".");
-//     const len = paths.length;
-//     for (let i = 0; i < len; i++) {
-//       const path = paths[i];
-//       if (i === len - 1) {
-//         let target: TOMLTable | TOMLArray;
-//         if (type === "standard") {
-//           target = {};
-//         } else {
-//           target = [];
-//         }
-//         cur[path] = target;
-//         currentValue = target;
-//       } else {
-//         if (path in cur) {
-//           cur = cur[path] as TOMLTable;
-//         } else {
-//           cur[path] = {};
-//           cur = cur[path] as TOMLTable;
-//         }
-//       }
-//     }
-//     return {
-//       ...tableRes,
-//       value: null,
-//     };
-//   }
-//   const ignoreRes = ignoreLine(input);
-//   if (ignoreRes.ok) {
-//     return {
-//       ...ignoreRes,
-//       value: null,
-//     };
-//   }
-//   return ignoreRes;
-// };
 
 const expression = alt([ignoreLine, keyvalLine, tableLine]);
 
