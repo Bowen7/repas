@@ -4,13 +4,13 @@ import {
   ParserErrResult,
   ParserResult,
   Parser,
+  ErrMessage,
 } from "./types";
-import { pushErrorStack } from "./utils";
-import { errRes } from "./error";
+import { fail } from "./utils";
 
 export const repeatParser =
   <T>(parser: Parser<T>, min: number, max: number) =>
-  (input: string, message?: string): ParserResult<T[]> => {
+  (input: string, message?: ErrMessage): ParserResult<T[]> => {
     let rest = input;
     let count = 0;
     const value: T[] = [];
@@ -29,7 +29,7 @@ export const repeatParser =
       }
     }
     if (value.length < min) {
-      return pushErrorStack(
+      return fail(
         errRes!,
         message || {
           kind: "repeat.parser",
@@ -46,7 +46,7 @@ export const repeatParser =
 
 export const repeatTester =
   (tester: CharacterTester, min: number, max: number) =>
-  (input: string, message?: string): ParserResult<string> => {
+  (input: string, message?: ErrMessage): ParserResult<string> => {
     let i = 0;
     let count = 0;
     while (i < input.length) {
@@ -63,8 +63,8 @@ export const repeatTester =
       }
     }
     if (count < min) {
-      return pushErrorStack(
-        errRes(input),
+      return fail(
+        input,
         message || {
           kind: "repeat.tester",
           value: `${min} - ${max}`,
@@ -101,7 +101,10 @@ export function repeat<T>(
   return repeatParser(parser as Parser<T>, min, max);
 }
 
-export function take1<T>(_parser: Parser<T>, _message?: string): Parser<T[]>;
+export function take1<T>(
+  _parser: Parser<T>,
+  _message?: ErrMessage
+): Parser<T[]>;
 export function take1(_tester: CharacterTester): Parser<string>;
 export function take1(
   parser: Parser<unknown> | CharacterTester
@@ -130,7 +133,10 @@ export function more0(
   return repeat(parser as CharacterTester, 0, Infinity);
 }
 
-export function more1<T>(_parser: Parser<T>, _message?: string): Parser<T[]>;
+export function more1<T>(
+  _parser: Parser<T>,
+  _message?: ErrMessage
+): Parser<T[]>;
 export function more1(_tester: CharacterTester): Parser<string>;
 export function more1(
   parser: Parser<unknown> | CharacterTester

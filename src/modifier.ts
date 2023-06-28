@@ -1,5 +1,5 @@
-import { Parser, OkParser, ParserResult } from "./types";
-import { pushErrorStack } from "./utils";
+import { Parser, OkParser, ParserResult, ErrMessage } from "./types";
+import { fail } from "./utils";
 
 export const msg =
   <T>(parser: Parser<T>, message: string) =>
@@ -18,7 +18,7 @@ export function map<T, R>(
   parser: Parser<T>,
   mapper: (_value: T) => R
 ): Parser<R> {
-  return (input: string, message?: string) => {
+  return (input: string, message?: ErrMessage) => {
     const result = parser(input, message);
     if (!result.ok) {
       return result;
@@ -34,7 +34,7 @@ export function mapRes<T, R>(
   parser: Parser<T>,
   mapper: (_value: ParserResult<T>) => ParserResult<R>
 ): Parser<R> {
-  return (input: string, message?: string) => {
+  return (input: string, message?: ErrMessage) => {
     const result = parser(input, message);
     return mapper(result);
   };
@@ -105,10 +105,10 @@ export function memo<T1 extends Array<unknown>, T2>(
 
 export const value =
   <T, V>(parser: Parser<T>, val: V) =>
-  (input: string, message?: string): ParserResult<V> => {
+  (input: string, message?: ErrMessage): ParserResult<V> => {
     const result = parser(input);
     if (!result.ok) {
-      return pushErrorStack(result, message);
+      return fail(result, message);
     }
     return {
       ...result,

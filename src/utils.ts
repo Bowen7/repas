@@ -1,27 +1,30 @@
 import { ParserErrResult, ErrMessage } from "./types";
 
-export const pushErrorStack = (
-  errRes: ParserErrResult,
+export const fail = (
+  errRes: ParserErrResult | string,
   message?: ErrMessage
 ): ParserErrResult => {
+  const result: ParserErrResult =
+    typeof errRes === "string"
+      ? { ok: false, rest: errRes, fatal: false, stack: [] }
+      : { ...errRes };
+
   if (!message) {
-    return errRes;
+    return result;
   }
-  const nextStack = errRes.stack.slice();
-  const nextErrRes = {
-    ...errRes,
-    stack: nextStack,
-  };
+  const nextStack = result.stack.slice();
+  result.stack = nextStack;
+
   if (typeof message === "string") {
     nextStack.push({ kind: "", value: message });
   } else {
     const { fatal, ...msg } = message;
     if (typeof fatal === "boolean") {
-      nextErrRes.fatal = fatal;
+      result.fatal = fatal;
     }
     nextStack.push(msg);
   }
-  return nextErrRes;
+  return result;
 };
 
 // TODO: pretty print error

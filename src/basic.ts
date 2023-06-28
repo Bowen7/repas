@@ -1,10 +1,9 @@
-import { ParserResult } from "./types";
-import { pushErrorStack } from "./utils";
-import { errRes } from "./error";
+import { ParserResult, ErrMessage } from "./types";
+import { fail } from "./utils";
 
 export const tag =
   (str: string) =>
-  (input: string, message?: string): ParserResult<string> => {
+  (input: string, message?: ErrMessage): ParserResult<string> => {
     if (str === input.slice(0, str.length)) {
       return {
         ok: true,
@@ -12,14 +11,11 @@ export const tag =
         value: str,
       };
     }
-    return pushErrorStack(
-      errRes(input),
-      message || { kind: "tag", value: str }
-    );
+    return fail(input, message || { kind: "tag", value: str });
   };
 
 export const regex = (r: RegExp) => {
-  return (input: string, message?: string): ParserResult<string> => {
+  return (input: string, message?: ErrMessage): ParserResult<string> => {
     const m = input.match(r);
     if (m) {
       return {
@@ -28,9 +24,6 @@ export const regex = (r: RegExp) => {
         value: m[0],
       };
     }
-    return pushErrorStack(
-      errRes(input),
-      message || { kind: "regex", value: r.toString() }
-    );
+    return fail(input, message || { kind: "regex", value: r.toString() });
   };
 };

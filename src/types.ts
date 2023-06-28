@@ -36,7 +36,10 @@ export type ParserResult<T> = ParserOkResult<T> | ParserErrResult;
 
 export type OkParser<T> = (
   _input: string,
-  _message?: string
+  _message?: ErrMessage
 ) => ParserOkResult<T>;
 
-export type Parser<T> = (_input: string, _message?: string) => ParserResult<T>;
+export type Parser<T> = (
+  _input: string,
+  _message?: ErrMessage
+) => ParserResult<T>;

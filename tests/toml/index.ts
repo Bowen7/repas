@@ -25,8 +25,7 @@ import {
   triplet,
   either,
   Result,
-  pushErrorStack,
-  errRes,
+  fail,
 } from "src";
 import {
   isAllowedCommentChar,
@@ -363,7 +362,7 @@ const stdTable = mapRes(
           value: null,
         };
       } else {
-        return pushErrorStack(errRes(result.rest), `key ${key} already exists`);
+        return fail(result.rest, `key ${key} already exists`);
       }
     }
     return result;
@@ -402,10 +401,7 @@ const inlineTable = mapRes(
         if (res.ok) {
           (res.value as TOMLTable)[lastPath!] = val;
         } else {
-          return pushErrorStack(
-            errRes(result.rest),
-            `key ${key} already exists`
-          );
+          return fail(result.rest, `key ${key} already exists`);
         }
       }
       Object.freeze(table);
@@ -432,7 +428,7 @@ const arrayTable = mapRes(
           value: null,
         };
       } else {
-        return pushErrorStack(errRes(result.rest), `key ${key} already exists`);
+        return fail(result.rest, `key ${key} already exists`);
       }
     }
     return result;
@@ -465,7 +461,7 @@ const keyvalLine = mapRes(
           value: null,
         };
       } else {
-        return pushErrorStack(errRes(result.rest), `key ${key} already exists`);
+        return fail(result.rest, `key ${key} already exists`);
       }
     }
     return result;

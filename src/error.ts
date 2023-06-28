@@ -1,15 +1,8 @@
-import { Parser, ParserErrResult } from "./types";
-
-export const errRes = (input: string): ParserErrResult => ({
-  ok: false,
-  fatal: false,
-  rest: input,
-  stack: [],
-});
+import { Parser, ErrMessage } from "./types";
 
 export const fatal =
   <T>(parser: Parser<T>): Parser<T> =>
-  (input: string, message?: string) => {
+  (input: string, message?: ErrMessage) => {
     const result = parser(input, message);
     if (result.ok) {
       return result;
@@ -22,7 +15,7 @@ export const fatal =
 
 export const nonFatal =
   <T>(parser: Parser<T>): Parser<T> =>
-  (input: string, message?: string) => {
+  (input: string, message?: ErrMessage) => {
     const result = parser(input, message);
     if (result.ok) {
       return result;
