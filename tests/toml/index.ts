@@ -26,6 +26,8 @@ import {
   either,
   Result,
   fail,
+  peek,
+  debug,
 } from "src";
 import {
   isAllowedCommentChar,
@@ -101,10 +103,10 @@ const comma = tag(",");
 const inlineTableOpen = tag("{");
 const inlineTableClose = tag("}");
 const equal = tag("=");
-const stdTableOpen = regex(/^\[[\t ]*/);
-const stdTableClose = regex(/^\[\t ]*]/);
-const arrayTableOpen = regex(/^\[\[[\t ]*/);
-const arrayTableClose = regex(/^[\t ]*\]\]/);
+const stdTableOpen = pair(tag("["), space0);
+const stdTableClose = pair(tag("]"), space0);
+const arrayTableOpen = pair(tag("[["), space0);
+const arrayTableClose = pair(tag("]]"), space0);
 const mlBasicStringDelim = tag('"""');
 const escape = tag("\\");
 const mlLiteralStringDelim = tag("'''");
@@ -444,45 +446,40 @@ function val(input: string) {
   );
 }
 
-const ignoreLine = pair(space0, opt(comment));
-
-const keyvalLine = mapRes(
-  seq([space0, keyval, space0, opt(comment)]),
-  (result) => {
-    if (result.ok) {
-      const [, [key, value]] = result.value;
-      const paths = key.split(".");
-      const lastPath = paths.pop();
-      const res = getTableValue(currentValue, paths, false);
-      if (res.ok) {
-        (res.value as TOMLTable)[lastPath!] = value;
-        return {
-          ...result,
-          value: null,
-        };
-      } else {
-        return fail(result.rest, `key ${key} already exists`);
-      }
+const keyvalLine = mapRes(triplet(keyval, space0, opt(comment)), (result) => {
+  if (result.ok) {
+    const [[key, value]] = result.value;
+    const paths = key.split(".");
+    const lastPath = paths.pop();
+    const res = getTableValue(currentValue, paths, false);
+    if (res.ok) {
+      (res.value as TOMLTable)[lastPath!] = value;
+      return {
+        ...result,
+        value: null,
+      };
+    } else {
+      return fail(result.rest, `key ${key} already exists`);
     }
-    return result;
   }
-);
+  return result;
+});
 
-const tableLine = map(
-  seq([space0, table, space0, opt(comment)]),
-  ([, value]) => value
-);
+const tableLine = triplet(table, space0, opt(comment));
 
-const expression = alt([ignoreLine, keyvalLine, tableLine]);
+const ignoreLine = either(comment, peek(newline));
+
+const expression = pair(space0, alt([ignoreLine, keyvalLine, tableLine]));
 
 const toml = pair(expression, more0(pair(newline, expression)));
 
-export function parse(input: string): TOMLTable {
+export function parseTOML(input: string): TOMLTable {
   rootValue = {};
+  currentValue = rootValue;
   const result = toml(input);
   if (!result.ok) {
     // TODO: display error message
-    throw new Error("123");
+    console.log(result);
   }
   return rootValue;
 }

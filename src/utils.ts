@@ -1,4 +1,4 @@
-import { ParserErrResult, ErrMessage } from "./types";
+import { ParserErrResult, ErrMessage, Parser } from "./types";
 
 export const fail = (
   errRes: ParserErrResult | string,
@@ -26,6 +26,18 @@ export const fail = (
   }
   return result;
 };
+
+export const debug =
+  <T>(parser: Parser<T>, name?: string): Parser<T> =>
+  (input: string, message?: ErrMessage) => {
+    const result = parser(input, message);
+    if (name) {
+      console.log(name + ":", result);
+    } else {
+      console.log(result);
+    }
+    return result;
+  };
 
 // TODO: pretty print error
 export const displayErr = (errRes: ParserErrResult): string => {
