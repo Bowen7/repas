@@ -1,32 +1,33 @@
 import { Parser, ParserResult, ErrMessage } from "./types";
 import { fail } from "./utils";
+import { map } from "./modifier";
 
 // 2 parsers
-export function seq<T1, T2>(
+export function tuple<T1, T2>(
   _parsers: [Parser<T1>, Parser<T2>],
   _outerMessage?: ErrMessage
 ): Parser<[T1, T2]>;
 
 // 3 parsers
-export function seq<T1, T2, T3>(
+export function tuple<T1, T2, T3>(
   _parsers: [Parser<T1>, Parser<T2>, Parser<T3>],
   _outerMessage?: ErrMessage
 ): Parser<[T1, T2, T3]>;
 
 // 4 parsers
-export function seq<T1, T2, T3, T4>(
+export function tuple<T1, T2, T3, T4>(
   _parsers: [Parser<T1>, Parser<T2>, Parser<T3>, Parser<T4>],
   _outerMessage?: ErrMessage
 ): Parser<[T1, T2, T3, T4]>;
 
 // 5 parsers
-export function seq<T1, T2, T3, T4, T5>(
+export function tuple<T1, T2, T3, T4, T5>(
   _parsers: [Parser<T1>, Parser<T2>, Parser<T3>, Parser<T4>, Parser<T5>],
   _outerMessage?: ErrMessage
 ): Parser<[T1, T2, T3, T4, T5]>;
 
 // 6 parsers
-export function seq<T1, T2, T3, T4, T5, T6>(
+export function tuple<T1, T2, T3, T4, T5, T6>(
   _parsers: [
     Parser<T1>,
     Parser<T2>,
@@ -39,12 +40,12 @@ export function seq<T1, T2, T3, T4, T5, T6>(
 ): Parser<[T1, T2, T3, T4, T5, T6]>;
 
 // more then 6 parsers
-export function seq<T extends unknown[]>(
+export function tuple<T extends unknown[]>(
   _parsers: { [K in keyof T]: Parser<T[K]> },
   _outerMessage?: ErrMessage
 ): Parser<T>;
 
-export function seq<T extends unknown[]>(
+export function tuple<T extends unknown[]>(
   parsers: { [K in keyof T]: Parser<T[K]> },
   outerMessage?: ErrMessage
 ): Parser<T> {
@@ -71,7 +72,7 @@ export const pair = <T1, T2>(
   parser1: Parser<T1>,
   parser2: Parser<T2>,
   outerMessage?: ErrMessage
-): Parser<[T1, T2]> => seq<[T1, T2]>([parser1, parser2], outerMessage);
+): Parser<[T1, T2]> => tuple<[T1, T2]>([parser1, parser2], outerMessage);
 
 export const triplet = <T1, T2, T3>(
   parser1: Parser<T1>,
@@ -79,7 +80,7 @@ export const triplet = <T1, T2, T3>(
   parser3: Parser<T3>,
   outerMessage?: ErrMessage
 ): Parser<[T1, T2, T3]> =>
-  seq<[T1, T2, T3]>([parser1, parser2, parser3], outerMessage);
+  tuple<[T1, T2, T3]>([parser1, parser2, parser3], outerMessage);
 
 export const delimited = <T1, T2, T3>(
   parser1: Parser<T1>,
@@ -87,7 +88,7 @@ export const delimited = <T1, T2, T3>(
   parser3: Parser<T3>,
   outerMessage?: ErrMessage
 ) => {
-  const parser = seq<[T1, T2, T3]>([parser1, parser2, parser3]);
+  const parser = tuple<[T1, T2, T3]>([parser1, parser2, parser3]);
   return (input: string, message = outerMessage): ParserResult<T2> => {
     const result = parser(input);
     if (!result.ok) {

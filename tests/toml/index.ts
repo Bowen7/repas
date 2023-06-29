@@ -1,6 +1,6 @@
 import {
   Parser,
-  seq,
+  tuple,
   tag,
   opt,
   newline,
@@ -139,15 +139,15 @@ const quotedKey = either(basicString, literalString);
 
 const simpleKey = either(quotedKey, unquotedKey);
 
-const dotSep = map(seq([space0, tag("."), space0]), (value) => value[1]);
+const dotSep = map(tuple([space0, tag("."), space0]), (value) => value[1]);
 const dottedKey = map(
-  seq([simpleKey, more1(seq([dotSep, simpleKey]))]),
+  tuple([simpleKey, more1(tuple([dotSep, simpleKey]))]),
   (value) => stringArrayToString(value)
 );
 
 // Multiline Basic String
 const mlbEscapedNl = map(
-  seq([escape, space0, newline, more0(either(space, newline))]),
+  tuple([escape, space0, newline, more0(either(space, newline))]),
   () => ""
 );
 const mlbContent = alt([basicChar, newline, mlbEscapedNl]);
@@ -162,7 +162,12 @@ const mlBasicStringCloseDelim = map(
   (value: string) => value.slice(3)
 );
 const mlBasicString = map(
-  seq([mlBasicStringDelim, opt(newline), mlBasicBody, mlBasicStringCloseDelim]),
+  tuple([
+    mlBasicStringDelim,
+    opt(newline),
+    mlBasicBody,
+    mlBasicStringCloseDelim,
+  ]),
   ([, , body, closeDelim]) => body + closeDelim
 );
 
@@ -178,7 +183,7 @@ const mlLiteralStringCloseDelim = map(
   (value: string) => value.slice(3)
 );
 const mlLiteralString = map(
-  seq([
+  tuple([
     mlLiteralStringDelim,
     opt(newline),
     mllLiteralBody,
@@ -288,22 +293,22 @@ const timeHour = takeX(isDigit, 2);
 const timeMinute = takeX(isDigit, 2);
 const timeSecond = takeX(isDigit, 2);
 const timeSecFrac = pair(decimalPoint, more1(isDigit));
-const timeNumOffset = seq([
+const timeNumOffset = tuple([
   take1((char) => char === "+" || char === "-"),
   timeHour,
   colon,
   timeMinute,
 ]);
 const timeOffset = either(timeNumOffset, tag("Z"));
-const partialTime = seq([
+const partialTime = tuple([
   timeHour,
   colon,
   timeMinute,
   opt(triplet(colon, timeSecond, opt(timeSecFrac))),
 ]);
-const fullDate = seq([dateFullYear, hyphen, dateMonth, hyphen, dateMDay]);
+const fullDate = tuple([dateFullYear, hyphen, dateMonth, hyphen, dateMDay]);
 const fullTime = pair(partialTime, timeOffset);
-const fullDateTime = map(seq([fullDate, timeDelim, fullTime]), (value) => ({
+const fullDateTime = map(tuple([fullDate, timeDelim, fullTime]), (value) => ({
   type: "datetime",
   value: stringArrayToString(value),
 }));
@@ -330,7 +335,7 @@ const dateTime = alt([
 ]) as Parser<DateTime>;
 
 // Array
-const arrayValue = triplet(wsCommentNewline, val, wsCommentNewline);
+const arrayValue = delimited(wsCommentNewline, val, wsCommentNewline);
 const arrayValues = map(
   pair(
     map(
@@ -345,8 +350,8 @@ const arrayValues = map(
   (value) => value[0]
 );
 const array = map(
-  seq([arrayOpen, opt(arrayValues), wsCommentNewline, arrayClose]),
-  (value) => value[0] || []
+  tuple([arrayOpen, opt(arrayValues), wsCommentNewline, arrayClose]),
+  (value) => value[1] || []
 ) as Parser<TOMLArray>;
 
 // Standard Table
@@ -386,7 +391,7 @@ const inlineTableKeyvals = map(
 );
 
 const inlineTable = mapRes(
-  seq([
+  tuple([
     inlineTableOpen,
     opt(inlineTableKeyvals),
     wsCommentNewline,
