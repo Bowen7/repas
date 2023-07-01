@@ -7,14 +7,6 @@ export const msg =
     parser(input, message);
 
 export function map<T, R>(
-  _parser: OkParser<T>,
-  _mapper: (_value: T) => R
-): OkParser<R>;
-export function map<T, R>(
-  _parser: Parser<T>,
-  _mapper: (_value: T) => R
-): Parser<R>;
-export function map<T, R>(
   parser: Parser<T>,
   mapper: (_value: T) => R
 ): Parser<R> {
@@ -85,21 +77,6 @@ export function peek<T>(parser: Parser<T>) {
       rest: input,
       value: res.value,
     };
-  };
-}
-
-export function memo<T1 extends Array<unknown>, T2>(
-  func: (..._args: T1) => T2
-) {
-  let cachedKey: T1[0] | null = null;
-  let cachedValue: T2;
-  return (...args: T1) => {
-    if (args[0] === cachedKey) {
-      return cachedValue;
-    }
-    cachedKey = args[0];
-    cachedValue = func(...args);
-    return cachedValue;
   };
 }
 

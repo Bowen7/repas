@@ -1,3 +1,0 @@
-[submodule "toml-test"]
-	path = toml-test
-	url = git@github.com:BurntSushi/toml-test.git

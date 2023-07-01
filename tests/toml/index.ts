@@ -29,6 +29,7 @@ import {
   preceded,
   terminated,
   separatedPair,
+  oneOf,
   debug,
 } from "src";
 import {
@@ -130,7 +131,9 @@ const comment = pair(
   tag("#"),
   more0((c) => isAllowedCommentChar(c))
 );
-const wsCommentNewline = more0(either(take1(isSpace), pair(comment, newline)));
+const wsCommentNewline = more0(
+  either(more1(isSpace), pair(opt(comment), newline))
+);
 
 // Literal string
 const literalString = delimited(apostrophe, more0(isLiteralChar), apostrophe);
@@ -195,12 +198,10 @@ const mlLiteralString = map(
 );
 
 // String
-const string = alt([
-  mlBasicString,
-  mlLiteralString,
-  basicString,
-  literalString,
-]);
+const string = map(
+  alt([mlBasicString, mlLiteralString, basicString, literalString]),
+  (value) => ({ type: "string", value })
+);
 
 // Key-Value pairs
 const keyvalSep = delimited(space0, equal, space0);
@@ -213,7 +214,10 @@ const keyval = separatedPair(key, keyvalSep, val) as Parser<
 >;
 
 // Boolean
-const boolean = map(either(tag("true"), tag("false")), (str) => str === "true");
+const boolean = map(either(tag("true"), tag("false")), (value) => ({
+  type: "bool",
+  value,
+}));
 
 // Integer
 const unsignedDecInt = either(
@@ -223,38 +227,54 @@ const unsignedDecInt = either(
   ),
   more1(isHexDigit)
 );
-const decInt = map(pair(opt(either(plus, minus)), unsignedDecInt), (value) =>
-  parseInt(stringArrayToString(value), 10)
-);
+const decInt = map(pair(opt(either(plus, minus)), unsignedDecInt), (value) => ({
+  type: "integer",
+  value: stringArrayToString(value),
+}));
 
 const hexInt = map(
   triplet(
     hexPrefix,
     take1(isHexDigit),
-    more1(either(take1(isHexDigit), pair(underscore, take1(isHexDigit))))
+    more1(
+      either(take1(isHexDigit), pair(value(underscore, ""), take1(isHexDigit)))
+    )
   ),
-  (value) => parseInt(stringArrayToString(value), 16)
+  (value) => ({
+    type: "integer",
+    value: parseInt(stringArrayToString(value), 16).toString(),
+  })
 );
 const octInt = map(
   triplet(
     octPrefix,
     take1(isDigit07),
-    more1(either(take1(isDigit07), pair(underscore, take1(isDigit07))))
+    more1(
+      either(take1(isDigit07), pair(value(underscore, ""), take1(isDigit07)))
+    )
   ),
-  (value) => parseInt(stringArrayToString(value), 8)
+  (value) => ({
+    type: "integer",
+    value: parseInt(stringArrayToString(value), 8).toString(),
+  })
 );
 const binInt = map(
   triplet(
     binPrefix,
     take1(isDigit01),
-    more1(either(take1(isDigit01), pair(underscore, take1(isDigit01))))
+    more1(
+      either(take1(isDigit01), pair(value(underscore, ""), take1(isDigit01)))
+    )
   ),
-  (value) => parseInt(stringArrayToString(value), 2)
+  (value) => ({
+    type: "integer",
+    value: parseInt(stringArrayToString(value), 2).toString(),
+  })
 );
 const integer = alt([hexInt, octInt, binInt, decInt]);
 
 // Float
-const floatIntPart = decInt;
+const floatIntPart = map(decInt, (value) => value.value);
 const zeroPrefixableInt = pair(
   take1(isDigit),
   more0(alt([take1(isDigit), pair(value(underscore, ""), take1(isDigit))]))
@@ -264,25 +284,35 @@ const exp = pair(e, floatExpPart);
 const frac = pair(decimalPoint, zeroPrefixableInt);
 
 const floatMap = {
-  inf: Infinity,
-  "+inf": Infinity,
-  "-inf": -Infinity,
-  nan: NaN,
-  "+nan": NaN,
-  "-nan": NaN,
+  inf: "inf",
+  "+inf": "inf",
+  "-inf": "-inf",
+  nan: "nan",
+  "+nan": "+nan",
+  "-nan": "-nan",
 };
+
 const specialFloat = map(
   pair(opt(either(plus, minus)), either(inf, nan)),
-  (value): number => {
+  (value) => {
     const str = stringArrayToString(value);
-    return floatMap[str as keyof typeof floatMap];
+    return {
+      type: "float",
+      value: floatMap[str as keyof typeof floatMap] as string,
+    };
   }
 );
 
-const float = pair(
+const float = either(
   specialFloat,
-  map(pair(floatIntPart, either(exp, pair(frac, opt(exp)))), ([int, decimal]) =>
-    parseFloat(stringArrayToString([int.toString(), decimal]))
+  map(
+    pair(floatIntPart, either(exp, pair(frac, opt(exp)))),
+    ([int, decimal]) => ({
+      type: "float",
+      value: parseFloat(
+        stringArrayToString([int.toString(), decimal])
+      ).toString(),
+    })
   )
 );
 
