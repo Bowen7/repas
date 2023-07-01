@@ -101,3 +101,26 @@ export const delimited = <T1, T2, T3>(
     };
   };
 };
+
+export const preceded = <T1, T2>(
+  parser1: Parser<T1>,
+  parser2: Parser<T2>,
+  outerMessage?: ErrMessage
+) => map(tuple([parser1, parser2], outerMessage), ([v]) => v);
+
+export const terminated = <T1, T2>(
+  parser1: Parser<T1>,
+  parser2: Parser<T2>,
+  outerMessage?: ErrMessage
+) => map(tuple([parser1, parser2], outerMessage), ([, v]) => v);
+
+export const separatedPair = <T1, T2, T3>(
+  parser1: Parser<T1>,
+  parser2: Parser<T2>,
+  parser3: Parser<T3>,
+  outerMessage?: ErrMessage
+) =>
+  map(tuple([parser1, parser2, parser3], outerMessage), ([v1, _v2, v3]) => [
+    v1,
+    v3,
+  ]);

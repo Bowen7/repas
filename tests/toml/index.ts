@@ -15,7 +15,6 @@ import {
   isDigit19,
   isDigit,
   takeX,
-  regex,
   space,
   repeat,
   map,
@@ -27,6 +26,9 @@ import {
   Result,
   fail,
   peek,
+  preceded,
+  terminated,
+  separatedPair,
   debug,
 } from "src";
 import {
@@ -202,11 +204,13 @@ const string = alt([
 
 // Key-Value pairs
 const keyvalSep = delimited(space0, equal, space0);
-const key = either(simpleKey, dottedKey);
-const keyval = map(triplet(key, keyvalSep, val), ([key, , value]) => [
-  key,
-  value,
-]) as Parser<[string, TOMLValue]>;
+const key = map(
+  pair(simpleKey, more0(terminated(dotSep, simpleKey))),
+  ([value, values]) => [value, ...values]
+);
+const keyval = separatedPair(key, keyvalSep, val) as Parser<
+  [string[], TOMLValue]
+>;
 
 // Boolean
 const boolean = map(either(tag("true"), tag("false")), (str) => str === "true");
@@ -336,18 +340,12 @@ const dateTime = alt([
 
 // Array
 const arrayValue = delimited(wsCommentNewline, val, wsCommentNewline);
-const arrayValues = map(
-  pair(
-    map(
-      pair(
-        arrayValue,
-        more0(map(pair(comma, arrayValue), ([, value]) => value))
-      ),
-      ([value, values]) => [value, ...values]
-    ),
-    opt(comma)
+const arrayValues = preceded(
+  map(
+    pair(arrayValue, more0(terminated(comma, arrayValue))),
+    ([value, values]) => [value, ...values]
   ),
-  (value) => value[0]
+  opt(comma)
 );
 const array = map(
   tuple([arrayOpen, opt(arrayValues), wsCommentNewline, arrayClose]),
@@ -359,8 +357,7 @@ const stdTable = mapRes(
   delimited(stdTableOpen, key, stdTableClose),
   (result) => {
     if (result.ok) {
-      const key = result.value;
-      const paths = key.split(".");
+      const paths = result.value;
       const res = getTableValue(rootValue, paths);
       if (res.ok) {
         currentValue = res.value as TOMLTable;
@@ -381,10 +378,7 @@ const inlineTableKeyval = delimited(wsCommentNewline, keyval, wsCommentNewline);
 
 const inlineTableKeyvals = map(
   pair(
-    pair(
-      inlineTableKeyval,
-      more0(map(pair(comma, inlineTableKeyval), (value) => value[1]))
-    ),
+    pair(inlineTableKeyval, more0(terminated(comma, inlineTableKeyval))),
     opt(comma)
   ),
   ([[value, values]]) => [value, ...values]
@@ -401,8 +395,7 @@ const inlineTable = mapRes(
     if (result.ok) {
       const [, keyvals] = result.value;
       const table: TOMLTable = {};
-      for (const [key, val] of keyvals) {
-        const paths = key.split(".");
+      for (const [paths, val] of keyvals) {
         const lastPath = paths.pop();
         const res = getTableValue(table, paths);
         if (res.ok) {
@@ -423,8 +416,7 @@ const arrayTable = mapRes(
   delimited(arrayTableOpen, key, arrayTableClose),
   (result) => {
     if (result.ok) {
-      const key = result.value;
-      const paths = key.split(".");
+      const paths = result.value;
       const res = getTableValue(rootValue, paths, true);
       if (res.ok) {
         const newTable: TOMLTable = {};
@@ -453,8 +445,7 @@ function val(input: string) {
 
 const keyvalLine = mapRes(triplet(keyval, space0, opt(comment)), (result) => {
   if (result.ok) {
-    const [[key, value]] = result.value;
-    const paths = key.split(".");
+    const [[paths, value]] = result.value;
     const lastPath = paths.pop();
     const res = getTableValue(currentValue, paths, false);
     if (res.ok) {

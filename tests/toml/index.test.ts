@@ -5,38 +5,17 @@ import { readFile } from "fs/promises";
 import { parseTOML } from "./index";
 
 const code = `
-# This is a TOML document. Boom.
-
-title = "TOML Example"
-
-[owner]
-name = "Lance Uppercut"
-dob = 1979-05-27T07:32:00-08:00 # First class dates? Why not?
-
-[database]
-server = "192.168.1.1"
-ports = [ 8001, 8001, 8002 ]
-connection_max = 5000
-enabled = true
-
-[servers]
-
-  # You can indent as you please. Tabs or spaces. TOML don't care.
-  [servers.alpha]
-  ip = "10.0.0.1"
-  dc = "eqdc10"
-
-  [servers.beta]
-  ip = "10.0.0.2"
-  dc = "eqdc10"
-
-[clients]
-data = [ ["gamma", "delta"], [1, 2] ]
-
-# Line breaks are OK when inside arrays
-hosts = [
-  "alpha",
-  "omega"
+ints = [1, 2, 3, ]
+floats = [1.1, 2.1, 3.1]
+strings = ["a", "b", "c"]
+dates = [
+  1987-07-05T17:45:00Z,
+  1979-05-27T07:32:00Z,
+  2006-06-01T11:00:00Z,
+]
+comments = [
+         1,
+         2, #this is ok
 ]
 `;
 console.log(parseTOML(code));
