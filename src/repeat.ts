@@ -29,13 +29,7 @@ export const repeatParser =
       }
     }
     if (value.length < min) {
-      return fail(
-        errRes!,
-        message || {
-          kind: "repeat.parser",
-          value: `${min} - ${max}`,
-        }
-      );
+      return fail(errRes!, message);
     }
     return {
       ok: true,
@@ -63,13 +57,7 @@ export const repeatTester =
       }
     }
     if (count < min) {
-      return fail(
-        input,
-        message || {
-          kind: "repeat.tester",
-          value: `${min} - ${max}`,
-        }
-      );
+      return fail(input, message);
     }
     return {
       ok: true,

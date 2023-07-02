@@ -39,10 +39,37 @@ export const debug =
     return result;
   };
 
-// TODO: pretty print error
-export const displayErr = (errRes: ParserErrResult): string => {
+export const locate = (
+  rest: string,
+  input: string
+): {
+  line: number;
+  column: number;
+} => {
+  const index = input.length - rest.length;
+  const lines = input.slice(0, index).split("\n");
+  const line = lines.length - 1;
+  const column = lines[line].length;
+  return { line, column };
+};
+
+export const defaultMsgMapper = (msg: { kind: string; value: string }) =>
+  msg.value;
+
+export const displayErrRes = (
+  errRes: ParserErrResult,
+  input: string,
+  msgMapper = defaultMsgMapper
+): string => {
+  const { line, column } = locate(errRes.rest, input);
+  const lines = input.split("\n");
   const stack = errRes.stack;
-  return stack.map((err) => err.value).join("\n");
+  const curLine = lines[line];
+  let message = curLine + "\n";
+  message += " ".repeat(column) + "^\n";
+  message += `at line: ${line}, column: ${column}\n`;
+  message += stack.map(msgMapper).join("\n");
+  return message;
 };
 
 export type Range = [string, string] | string;

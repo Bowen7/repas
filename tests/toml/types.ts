@@ -4,13 +4,12 @@ export type DateTime = {
 };
 
 export type TOMLValue =
-  | { type: "string"; value: string }
-  | { type: "bool"; value: string }
+  | string
+  | boolean
   | TOMLArray
   | TOMLTable
   | DateTime
-  | { type: "float"; value: string }
-  | { type: "integer"; value: string };
+  | number;
 
 export type TOMLArray = TOMLValue[];
 export type TOMLTable = {

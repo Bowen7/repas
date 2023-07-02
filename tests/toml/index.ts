@@ -1,3 +1,4 @@
+import { displayErrRes } from "./../../src/utils";
 import {
   Parser,
   tuple,
@@ -94,7 +95,7 @@ const underscore = tag("_");
 const hexPrefix = tag("0x");
 const octPrefix = tag("0o");
 const binPrefix = tag("0b");
-const e = tag("e");
+const e = oneOf("eE");
 const inf = tag("inf");
 const nan = tag("nan");
 const decimalPoint = tag(".");
@@ -145,10 +146,6 @@ const quotedKey = either(basicString, literalString);
 const simpleKey = either(quotedKey, unquotedKey);
 
 const dotSep = map(tuple([space0, tag("."), space0]), (value) => value[1]);
-const dottedKey = map(
-  tuple([simpleKey, more1(tuple([dotSep, simpleKey]))]),
-  (value) => stringArrayToString(value)
-);
 
 // Multiline Basic String
 const mlbEscapedNl = map(
@@ -198,10 +195,12 @@ const mlLiteralString = map(
 );
 
 // String
-const string = map(
-  alt([mlBasicString, mlLiteralString, basicString, literalString]),
-  (value) => ({ type: "string", value })
-);
+const string = alt([
+  mlBasicString,
+  mlLiteralString,
+  basicString,
+  literalString,
+]);
 
 // Key-Value pairs
 const keyvalSep = delimited(space0, equal, space0);
@@ -214,10 +213,7 @@ const keyval = separatedPair(key, keyvalSep, val) as Parser<
 >;
 
 // Boolean
-const boolean = map(either(tag("true"), tag("false")), (value) => ({
-  type: "bool",
-  value,
-}));
+const boolean = map(either(tag("true"), tag("false")), (str) => str === "true");
 
 // Integer
 const unsignedDecInt = either(
@@ -225,12 +221,11 @@ const unsignedDecInt = either(
     take1(isDigit19),
     more1(either(take1(isDigit), pair(underscore, take1(isDigit))))
   ),
-  more1(isHexDigit)
+  take1(isDigit)
 );
-const decInt = map(pair(opt(either(plus, minus)), unsignedDecInt), (value) => ({
-  type: "integer",
-  value: stringArrayToString(value),
-}));
+const decInt = map(pair(opt(either(plus, minus)), unsignedDecInt), (value) =>
+  parseInt(stringArrayToString(value), 10)
+);
 
 const hexInt = map(
   triplet(
@@ -240,10 +235,7 @@ const hexInt = map(
       either(take1(isHexDigit), pair(value(underscore, ""), take1(isHexDigit)))
     )
   ),
-  (value) => ({
-    type: "integer",
-    value: parseInt(stringArrayToString(value), 16).toString(),
-  })
+  (value) => parseInt(stringArrayToString(value), 16)
 );
 const octInt = map(
   triplet(
@@ -253,10 +245,7 @@ const octInt = map(
       either(take1(isDigit07), pair(value(underscore, ""), take1(isDigit07)))
     )
   ),
-  (value) => ({
-    type: "integer",
-    value: parseInt(stringArrayToString(value), 8).toString(),
-  })
+  (value) => parseInt(stringArrayToString(value), 8)
 );
 const binInt = map(
   triplet(
@@ -266,15 +255,12 @@ const binInt = map(
       either(take1(isDigit01), pair(value(underscore, ""), take1(isDigit01)))
     )
   ),
-  (value) => ({
-    type: "integer",
-    value: parseInt(stringArrayToString(value), 2).toString(),
-  })
+  (value) => parseInt(stringArrayToString(value), 2)
 );
 const integer = alt([hexInt, octInt, binInt, decInt]);
 
 // Float
-const floatIntPart = map(decInt, (value) => value.value);
+const floatIntPart = decInt;
 const zeroPrefixableInt = pair(
   take1(isDigit),
   more0(alt([take1(isDigit), pair(value(underscore, ""), take1(isDigit))]))
@@ -284,35 +270,25 @@ const exp = pair(e, floatExpPart);
 const frac = pair(decimalPoint, zeroPrefixableInt);
 
 const floatMap = {
-  inf: "inf",
-  "+inf": "inf",
-  "-inf": "-inf",
-  nan: "nan",
-  "+nan": "+nan",
-  "-nan": "-nan",
+  inf: Infinity,
+  "+inf": Infinity,
+  "-inf": -Infinity,
+  nan: NaN,
+  "+nan": NaN,
+  "-nan": NaN,
 };
-
 const specialFloat = map(
   pair(opt(either(plus, minus)), either(inf, nan)),
-  (value) => {
+  (value): number => {
     const str = stringArrayToString(value);
-    return {
-      type: "float",
-      value: floatMap[str as keyof typeof floatMap] as string,
-    };
+    return floatMap[str as keyof typeof floatMap];
   }
 );
 
 const float = either(
   specialFloat,
-  map(
-    pair(floatIntPart, either(exp, pair(frac, opt(exp)))),
-    ([int, decimal]) => ({
-      type: "float",
-      value: parseFloat(
-        stringArrayToString([int.toString(), decimal])
-      ).toString(),
-    })
+  map(pair(floatIntPart, either(exp, pair(frac, opt(exp)))), ([int, decimal]) =>
+    parseFloat(stringArrayToString([int.toString(), decimal]))
   )
 );
 
@@ -320,8 +296,9 @@ const float = either(
 const dateFullYear = takeX(isDigit, 4);
 const dateMonth = takeX(isDigit, 2);
 const dateMDay = takeX(isDigit, 2);
-const timeDelim = take1(
-  (char) => char === "t" || char === "T" || isSpace(char)
+const timeDelim = value(
+  take1((char) => char === "t" || char === "T" || isSpace(char)),
+  "T"
 );
 const timeHour = takeX(isDigit, 2);
 const timeMinute = takeX(isDigit, 2);
@@ -333,7 +310,7 @@ const timeNumOffset = tuple([
   colon,
   timeMinute,
 ]);
-const timeOffset = either(timeNumOffset, tag("Z"));
+const timeOffset = either(timeNumOffset, value(oneOf("zZ"), "Z"));
 const partialTime = tuple([
   timeHour,
   colon,
@@ -388,6 +365,7 @@ const stdTable = mapRes(
   (result) => {
     if (result.ok) {
       const paths = result.value;
+      console.log(123, rootValue, paths);
       const res = getTableValue(rootValue, paths);
       if (res.ok) {
         currentValue = res.value as TOMLTable;
@@ -504,8 +482,7 @@ export function parseTOML(input: string): TOMLTable {
   currentValue = rootValue;
   const result = toml(input);
   if (!result.ok) {
-    // TODO: display error message
-    console.log(result);
+    throw new Error(displayErrRes(result, input));
   }
   return rootValue;
 }
