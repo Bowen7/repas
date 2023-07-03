@@ -1,7 +1,8 @@
 {
   "scripts": {
     "test": "vitest",
-    "test-ui": "vitest --ui"
+    "test-ui": "vitest --ui",
+    "dev": "npx tsx ./playground/index.ts"
   },
   "devDependencies": {
     "@vitest/ui": "^0.32.2",

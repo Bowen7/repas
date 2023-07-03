@@ -19,6 +19,6 @@
     "moduleResolution": "nodenext",
     "baseUrl": "."
   },
-  "include": ["src", "tests"],
+  "include": ["src", "tests", "playground"],
   "exclude": ["node_modules"]
 }

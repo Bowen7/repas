@@ -1,13 +1,14 @@
-import { expect, test } from "vitest";
+import { expect, test, describe } from "vitest";
 import { parseTOML } from "../index";
-
-test("parse bool", () => {
-  const toml = `
+describe("bool", () => {
+  test("bool", () => {
+    const toml = `
 t = true
-f = false  
+f = false
 `;
-  expect(parseTOML(toml)).toEqual({
-    f: false,
-    t: true,
+    expect(parseTOML(toml)).toEqual({
+      f: false,
+      t: true,
+    });
   });
 });

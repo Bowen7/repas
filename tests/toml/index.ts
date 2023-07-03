@@ -219,13 +219,17 @@ const boolean = map(either(tag("true"), tag("false")), (str) => str === "true");
 const unsignedDecInt = either(
   pair(
     take1(isDigit19),
-    more1(either(take1(isDigit), pair(underscore, take1(isDigit))))
+    more1(either(take1(isDigit), pair(value(underscore, ""), take1(isDigit))))
   ),
   take1(isDigit)
 );
-const decInt = map(pair(opt(either(plus, minus)), unsignedDecInt), (value) =>
-  parseInt(stringArrayToString(value), 10)
-);
+const decInt = map(pair(opt(either(plus, minus)), unsignedDecInt), (value) => {
+  const num = parseInt(stringArrayToString(value), 10);
+  if (num > Number.MAX_SAFE_INTEGER || num < Number.MIN_SAFE_INTEGER) {
+    return BigInt(num);
+  }
+  return num;
+});
 
 const hexInt = map(
   triplet(
@@ -265,7 +269,7 @@ const zeroPrefixableInt = pair(
   take1(isDigit),
   more0(alt([take1(isDigit), pair(value(underscore, ""), take1(isDigit))]))
 );
-const floatExpPart = pair(opt(either(plus, minus)), unsignedDecInt);
+const floatExpPart = pair(opt(either(plus, minus)), zeroPrefixableInt);
 const exp = pair(e, floatExpPart);
 const frac = pair(decimalPoint, zeroPrefixableInt);
 
@@ -303,7 +307,12 @@ const timeDelim = value(
 const timeHour = takeX(isDigit, 2);
 const timeMinute = takeX(isDigit, 2);
 const timeSecond = takeX(isDigit, 2);
-const timeSecFrac = pair(decimalPoint, more1(isDigit));
+const timeSecFrac = pair(
+  decimalPoint,
+  map(more1(isDigit), (value) =>
+    value.length < 3 ? value + "0".repeat(3 - value.length) : value
+  )
+);
 const timeNumOffset = tuple([
   take1((char) => char === "+" || char === "-"),
   timeHour,
@@ -315,7 +324,7 @@ const partialTime = tuple([
   timeHour,
   colon,
   timeMinute,
-  opt(triplet(colon, timeSecond, opt(timeSecFrac))),
+  opt(triplet(colon, timeSecond, opt(timeSecFrac)), ":00"),
 ]);
 const fullDate = tuple([dateFullYear, hyphen, dateMonth, hyphen, dateMDay]);
 const fullTime = pair(partialTime, timeOffset);
