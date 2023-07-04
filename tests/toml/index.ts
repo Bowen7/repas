@@ -108,9 +108,9 @@ const inlineTableOpen = tag("{");
 const inlineTableClose = tag("}");
 const equal = tag("=");
 const stdTableOpen = pair(tag("["), space0);
-const stdTableClose = pair(tag("]"), space0);
+const stdTableClose = pair(space0, tag("]"));
 const arrayTableOpen = pair(tag("[["), space0);
-const arrayTableClose = pair(tag("]]"), space0);
+const arrayTableClose = pair(space0, tag("]]"));
 const mlBasicStringDelim = tag('"""');
 const escape = tag("\\");
 const mlLiteralStringDelim = tag("'''");
@@ -219,33 +219,40 @@ const boolean = map(either(tag("true"), tag("false")), (str) => str === "true");
 const unsignedDecInt = either(
   pair(
     take1(isDigit19),
-    more1(either(take1(isDigit), pair(value(underscore, ""), take1(isDigit))))
+    more0(either(take1(isDigit), pair(value(underscore, ""), take1(isDigit))))
   ),
   take1(isDigit)
 );
 const decInt = map(pair(opt(either(plus, minus)), unsignedDecInt), (value) => {
+  const str = stringArrayToString(value);
   const num = parseInt(stringArrayToString(value), 10);
   if (num > Number.MAX_SAFE_INTEGER || num < Number.MIN_SAFE_INTEGER) {
-    return BigInt(num);
+    return BigInt(str);
   }
   return num;
 });
 
-const hexInt = map(
-  triplet(
-    hexPrefix,
-    take1(isHexDigit),
-    more1(
-      either(take1(isHexDigit), pair(value(underscore, ""), take1(isHexDigit)))
-    )
+const hexInt = debug(
+  map(
+    triplet(
+      hexPrefix,
+      take1(isHexDigit),
+      more0(
+        either(
+          take1(isHexDigit),
+          pair(value(underscore, ""), take1(isHexDigit))
+        )
+      )
+    ),
+    (value) => parseInt(stringArrayToString(value), 16)
   ),
-  (value) => parseInt(stringArrayToString(value), 16)
+  "hex"
 );
 const octInt = map(
   triplet(
-    octPrefix,
+    value(octPrefix, ""),
     take1(isDigit07),
-    more1(
+    more0(
       either(take1(isDigit07), pair(value(underscore, ""), take1(isDigit07)))
     )
   ),
@@ -253,15 +260,17 @@ const octInt = map(
 );
 const binInt = map(
   triplet(
-    binPrefix,
+    value(binPrefix, ""),
     take1(isDigit01),
-    more1(
+    more0(
       either(take1(isDigit01), pair(value(underscore, ""), take1(isDigit01)))
     )
   ),
   (value) => parseInt(stringArrayToString(value), 2)
 );
-const integer = alt([hexInt, octInt, binInt, decInt]);
+const integer = map(alt([hexInt, octInt, binInt, decInt]), (value) =>
+  value === 0 ? 0 : value
+);
 
 // Float
 const floatIntPart = decInt;
@@ -374,7 +383,6 @@ const stdTable = mapRes(
   (result) => {
     if (result.ok) {
       const paths = result.value;
-      console.log(123, rootValue, paths);
       const res = getTableValue(rootValue, paths);
       if (res.ok) {
         currentValue = res.value as TOMLTable;

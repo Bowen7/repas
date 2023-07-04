@@ -97,7 +97,7 @@ export const escaped = (input: string): ParserResult<string> => {
       ],
     };
   }
-  if (char === "u") {
+  if (char === "u" || char === "U") {
     let len = 0;
     for (let i = 2; i < 10; i++) {
       if (isHexDigit(input[i])) {
