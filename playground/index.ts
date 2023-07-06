@@ -1,12 +1,10 @@
 import { parseTOML } from "../tests/toml";
 console.log(
-  parseTOML(
-    `
-    # Seconds are optional in date-time and time.
-    without-seconds-1 = 13:37
-    without-seconds-2 = 1979-05-27 07:32Z
-    without-seconds-3 = 1979-05-27 07:32-07:00
-    without-seconds-4 = 1979-05-27T07:32
+  JSON.stringify(
+    parseTOML(
+      `
+      "~  ÿ ퟿  ￿ 𐀀 􏿿" = "basic key"
 `.trim()
+    )
   )
 );

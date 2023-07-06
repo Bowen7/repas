@@ -1,4 +1,4 @@
-import { ParserErrResult, ErrMessage, Parser } from "./types";
+import { ParserErrResult, ErrMessage, Parser, CharTestFunc } from "./types";
 
 export const fail = (
   errRes: ParserErrResult | string,
@@ -53,13 +53,13 @@ export const locate = (
   return { line, column };
 };
 
-export const defaultMsgMapper = (msg: { kind: string; value: string }) =>
+export const defaultMsgMap = (msg: { kind: string; value: string }) =>
   msg.value;
 
 export const displayErrRes = (
   errRes: ParserErrResult,
   input: string,
-  msgMapper = defaultMsgMapper
+  mapMsg = defaultMsgMap
 ): string => {
   const { line, column } = locate(errRes.rest, input);
   const lines = input.split("\n");
@@ -68,45 +68,59 @@ export const displayErrRes = (
   let message = "\n" + curLine + "\n";
   message += " ".repeat(column) + "^\n";
   message += `at line: ${line}, column: ${column}\n`;
-  message += stack.map(msgMapper).join("\n");
+  message += stack.map(mapMsg).join("\n");
   return message;
 };
 
 export type Range = [string, string] | string;
 export type CodeRange = [number, number] | number;
-export type RangeFunc = (_char: string) => boolean;
 
 export const range = (start: string, end: string) => (char: string) =>
   char >= start && char <= end;
 
 export const ranges =
-  (...ranges: (Range | RangeFunc)[]) =>
-  (char: string) =>
+  (...ranges: (Range | CharTestFunc)[]) =>
+  (char: string, input: string) =>
     ranges.some((range) => {
       if (Array.isArray(range)) {
         const [start, end] = range;
         return char >= start && char <= end;
       } else if (typeof range === "function") {
-        return range(char);
+        return range(char, input);
       }
       return char === range;
     });
 
-export const codeRange = (start: number, end: number) => (char: string) => {
-  const code = char.charCodeAt(0);
-  return code >= start && code <= end;
-};
+export const codeRange =
+  (start: number, end: number) => (_char: string, input: string) => {
+    const code = input.codePointAt(0)!;
+    const len = String.fromCodePoint(code).length;
+    if (code >= start && code <= end) {
+      return len;
+    }
+    return false;
+  };
+
 export const codeRanges =
-  (...ranges: (CodeRange | RangeFunc)[]) =>
-  (char: string) => {
-    const code = char.charCodeAt(0);
-    return ranges.some((range) => {
+  (...ranges: (CodeRange | CharTestFunc)[]): CharTestFunc =>
+  (char: string, input: string) => {
+    const code = input.codePointAt(0)!;
+    const len = String.fromCodePoint(code).length;
+    for (const range of ranges) {
       if (Array.isArray(range)) {
         const [start, end] = range;
-        return code >= start && code <= end;
+        if (code >= start && code <= end) {
+          return len;
+        }
       } else if (typeof range === "function") {
-        return range(char);
+        const res = Number(range(char, input));
+        if (res) {
+          return res;
+        }
       }
-      return code === range;
-    });
+      if (code === range) {
+        return len;
+      }
+    }
+    return false;
   };

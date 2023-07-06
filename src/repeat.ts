@@ -1,5 +1,5 @@
 import {
-  CharacterTester,
+  CharTestFunc,
   ParserOkResult,
   ParserErrResult,
   ParserResult,
@@ -38,15 +38,15 @@ export const repeatParser =
     };
   };
 
-export const repeatTester =
-  (tester: CharacterTester, min: number, max: number) =>
+export const repeatTestFunc =
+  (testFunc: CharTestFunc, min: number, max: number) =>
   (input: string, message?: ErrMessage): ParserResult<string> => {
     let i = 0;
     let count = 0;
     while (i < input.length) {
-      const char = input[i];
-      const str = input.slice(i);
-      const len = Number(tester(char, str));
+      const rest = input.slice(i);
+      const char = rest[0];
+      const len = Number(testFunc(char, rest));
       if (len === 0) {
         break;
       }
@@ -72,19 +72,19 @@ export function repeat<T>(
   _max: number
 ): Parser<T[]>;
 export function repeat(
-  _tester: CharacterTester,
+  _testFunc: CharTestFunc,
   _min: number,
   _max: number
 ): Parser<string>;
 export function repeat<T>(
-  parser: Parser<T> | CharacterTester,
+  parser: Parser<T> | CharTestFunc,
   min = 0,
   max = Infinity
 ): Parser<T[]> | Parser<string> {
   const result = parser(" ", " ");
   const type = typeof result;
   if (type === "number" || type === "boolean") {
-    return repeatTester(parser as CharacterTester, min, max);
+    return repeatTestFunc(parser as CharTestFunc, min, max);
   }
   return repeatParser(parser as Parser<T>, min, max);
 }
@@ -93,50 +93,44 @@ export function take1<T>(
   _parser: Parser<T>,
   _message?: ErrMessage
 ): Parser<T[]>;
-export function take1(_tester: CharacterTester): Parser<string>;
-export function take1(
-  parser: Parser<unknown> | CharacterTester
-): Parser<unknown> {
-  return repeat(parser as CharacterTester, 1, 1);
+export function take1(_testFunc: CharTestFunc): Parser<string>;
+export function take1(parser: Parser<unknown> | CharTestFunc): Parser<unknown> {
+  return repeat(parser as CharTestFunc, 1, 1);
 }
 
 export function takeX<T>(_parser: Parser<T>, _times: number): Parser<T[]>;
-export function takeX(_tester: CharacterTester, _times: number): Parser<string>;
+export function takeX(_testFunc: CharTestFunc, _times: number): Parser<string>;
 export function takeX(
-  parser: Parser<unknown> | CharacterTester,
+  parser: Parser<unknown> | CharTestFunc,
   times: number
 ): Parser<unknown> {
-  return repeat(parser as CharacterTester, times, times);
+  return repeat(parser as CharTestFunc, times, times);
 }
 
 export function more0<T>(
   _parser: Parser<T>
 ): (_input: string) => ParserOkResult<T[]>;
 export function more0(
-  _tester: CharacterTester
+  _testFunc: CharTestFunc
 ): (_input: string) => ParserOkResult<string>;
-export function more0(
-  parser: Parser<unknown> | CharacterTester
-): Parser<unknown> {
-  return repeat(parser as CharacterTester, 0, Infinity);
+export function more0(parser: Parser<unknown> | CharTestFunc): Parser<unknown> {
+  return repeat(parser as CharTestFunc, 0, Infinity);
 }
 
 export function more1<T>(
   _parser: Parser<T>,
   _message?: ErrMessage
 ): Parser<T[]>;
-export function more1(_tester: CharacterTester): Parser<string>;
-export function more1(
-  parser: Parser<unknown> | CharacterTester
-): Parser<unknown> {
-  return repeat(parser as CharacterTester, 1, Infinity);
+export function more1(_testFunc: CharTestFunc): Parser<string>;
+export function more1(parser: Parser<unknown> | CharTestFunc): Parser<unknown> {
+  return repeat(parser as CharTestFunc, 1, Infinity);
 }
 
 export function moreX<T>(_parser: Parser<T>, _times: number): Parser<T[]>;
-export function moreX(_tester: CharacterTester, _times: number): Parser<string>;
+export function moreX(_testFunc: CharTestFunc, _times: number): Parser<string>;
 export function moreX(
-  parser: Parser<unknown> | CharacterTester,
+  parser: Parser<unknown> | CharTestFunc,
   times: number
 ): Parser<unknown> {
-  return repeat(parser as CharacterTester, times, times);
+  return repeat(parser as CharTestFunc, times, times);
 }

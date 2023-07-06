@@ -6,6 +6,7 @@ import {
   isHexDigit,
   alt,
   range,
+  fail,
   debug,
 } from "src";
 
@@ -30,11 +31,12 @@ const isBasicUnescaped = codeRanges(
 
 export const basicUnescaped = (input: string): ParserResult<string> => {
   const char = input[0];
-  if (isBasicUnescaped(char)) {
+  const len = Number(isBasicUnescaped(char, input));
+  if (len) {
     return {
       ok: true,
-      rest: input.slice(1),
-      value: char,
+      rest: input.slice(len),
+      value: input.slice(0, len),
     };
   }
   return {
@@ -82,7 +84,7 @@ export const escaped = (input: string): ParserResult<string> => {
       return {
         ok: true,
         rest: input.slice(4),
-        value: String.fromCharCode(parseInt(input.slice(2, 4), 16)),
+        value: String.fromCodePoint(parseInt(input.slice(2, 4), 16)),
       };
     }
     return {
@@ -108,7 +110,7 @@ export const escaped = (input: string): ParserResult<string> => {
     }
     if (len === 4 || len === 8) {
       const code = parseInt(input.slice(2, 2 + len), 16);
-      const value = String.fromCharCode(code);
+      const value = String.fromCodePoint(code);
       return {
         ok: true,
         rest: input.slice(2 + len),
@@ -150,11 +152,12 @@ export const isLiteralChar = codeRanges(
 );
 export const literalChar = (input: string): ParserResult<string> => {
   const char = input[0];
-  if (isLiteralChar(char)) {
+  const len = Number(isLiteralChar(char, input));
+  if (len) {
     return {
       ok: true,
-      rest: input.slice(1),
-      value: char,
+      rest: input.slice(len),
+      value: input.slice(0, len),
     };
   }
   return {
@@ -188,5 +191,5 @@ export const isUnquotedKeyCode = codeRanges(
   [0x10000, 0xeffff]
 );
 
-export const isUnquotedKeyChar = (char: string) =>
-  isAlphanumeric(char) || isUnquotedKeyCode(char);
+export const isUnquotedKeyChar = (char: string, input: string) =>
+  isAlphanumeric(char) || isUnquotedKeyCode(char, input);

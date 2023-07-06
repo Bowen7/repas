@@ -128,10 +128,7 @@ const basicString = map(
 );
 
 // Comment
-const comment = pair(
-  tag("#"),
-  more0((c) => isAllowedCommentChar(c))
-);
+const comment = pair(tag("#"), more0(isAllowedCommentChar));
 const wsCommentNewline = more0(
   either(more1(isSpace), pair(opt(comment), newline))
 );

@@ -1,4 +1,4 @@
-export type CharacterTester = (_char: string, _str: string) => boolean | number;
+export type CharTestFunc = (_char: string, _input: string) => boolean | number;
 
 export type OkResult<T> = {
   ok: true;
