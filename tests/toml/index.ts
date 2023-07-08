@@ -47,42 +47,40 @@ import { DateTime, TOMLArray, TOMLValue, TOMLTable } from "./types";
 let rootValue: TOMLTable = {};
 let currentValue: TOMLTable = rootValue;
 
-const isObject = (value: unknown): value is object =>
-  Object.prototype.toString.call(value) === "[object Object]";
-
 const getTableValue = (
   table: TOMLTable,
   paths: string[],
   isArrayTable = false
 ): Result<{ value: TOMLArray | TOMLTable }, {}> => {
   const len = paths.length;
-  let cur = table;
-  for (let i = 0; i < len; i++) {
+  let cur: TOMLTable | TOMLArray = table;
+  let i = 0;
+  while (i < len) {
+    if (Object.isFrozen(cur)) {
+      return { ok: false };
+    }
+    if (Array.isArray(cur)) {
+      cur = cur[cur.length - 1] as TOMLTable | TOMLArray;
+      continue;
+    }
     const path = paths[i];
     if (path in cur) {
-      const value = cur[path];
-      if (Array.isArray(value) || isObject(value)) {
-        if (Object.isFrozen(value)) {
-          return { ok: false };
-        }
-      }
-      if (Array.isArray(value)) {
-        if (i === len - 1 && isArrayTable) {
-          return { ok: true, value };
-        }
-        return { ok: false };
-      }
-      if (!isObject(value)) {
+      cur = cur[path] as TOMLTable | TOMLArray;
+      if (i === len - 1 && isArrayTable && !Array.isArray(cur)) {
         return { ok: false };
       }
     } else {
       if (i === len - 1 && isArrayTable) {
         cur[path] = [];
-        return { ok: true, value: cur[path] as TOMLArray };
+      } else {
+        cur[path] = {};
       }
-      cur[path] = {};
+      cur = cur[path] as TOMLTable;
     }
-    cur = cur[path] as TOMLTable;
+    i++;
+  }
+  if (Object.isFrozen(cur)) {
+    return { ok: false };
   }
   return { ok: true, value: cur };
 };
