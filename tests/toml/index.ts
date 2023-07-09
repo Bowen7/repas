@@ -218,7 +218,8 @@ const unsignedDecInt = either(
   ),
   take1(isDigit)
 );
-const decInt = map(pair(opt(either(plus, minus)), unsignedDecInt), (value) => {
+const signedDecInt = pair(opt(either(plus, minus)), unsignedDecInt);
+const decInt = map(signedDecInt, (value) => {
   const str = stringArrayToString(value);
   const num = parseInt(stringArrayToString(value), 10);
   if (num > Number.MAX_SAFE_INTEGER || num < Number.MIN_SAFE_INTEGER) {
@@ -268,7 +269,7 @@ const integer = map(alt([hexInt, octInt, binInt, decInt]), (value) =>
 );
 
 // Float
-const floatIntPart = decInt;
+const floatIntPart = signedDecInt;
 const zeroPrefixableInt = pair(
   take1(isDigit),
   more0(alt([take1(isDigit), pair(value(underscore, ""), take1(isDigit))]))
@@ -295,8 +296,8 @@ const specialFloat = map(
 
 const float = either(
   specialFloat,
-  map(pair(floatIntPart, either(exp, pair(frac, opt(exp)))), ([int, decimal]) =>
-    parseFloat(stringArrayToString([int.toString(), decimal]))
+  map(pair(floatIntPart, either(exp, pair(frac, opt(exp)))), (value) =>
+    parseFloat(stringArrayToString(value))
   )
 );
 
