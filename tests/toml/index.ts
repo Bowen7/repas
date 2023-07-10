@@ -218,7 +218,9 @@ const unsignedDecInt = either(
   ),
   take1(isDigit)
 );
+
 const signedDecInt = pair(opt(either(plus, minus)), unsignedDecInt);
+
 const decInt = map(signedDecInt, (value) => {
   const str = stringArrayToString(value);
   const num = parseInt(stringArrayToString(value), 10);
@@ -264,8 +266,9 @@ const binInt = map(
   ),
   (value) => parseInt(stringArrayToString(value), 2)
 );
-const integer = map(alt([hexInt, octInt, binInt, decInt]), (value) =>
-  value === 0 ? 0 : value
+const integer = map(
+  alt([hexInt, octInt, binInt, decInt]),
+  (value) => value || 0
 );
 
 // Float
@@ -296,8 +299,9 @@ const specialFloat = map(
 
 const float = either(
   specialFloat,
-  map(pair(floatIntPart, either(exp, pair(frac, opt(exp)))), (value) =>
-    parseFloat(stringArrayToString(value))
+  map(
+    pair(floatIntPart, either(exp, pair(frac, opt(exp)))),
+    (value) => parseFloat(stringArrayToString(value)) || 0
   )
 );
 
