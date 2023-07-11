@@ -172,7 +172,7 @@ const mlBasicString = map(
 const mllQuotes = repeat(apostrophe, 1, 2);
 const mllContent = either(literalChar, newline);
 const mllLiteralBody = map(
-  pair(more0(mllContent), opt(pair(mllQuotes, more1(mllContent)))),
+  pair(more0(mllContent), more0(pair(mllQuotes, more1(mllContent)))),
   (value) => stringArrayToString(value)
 );
 const mlLiteralStringCloseDelim = map(

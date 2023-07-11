@@ -236,12 +236,12 @@ sf5 = +nan # same as \`nan\`
 sf6 = -nan # valid, actual encoding is implementation-specific
 `;
     expect(parseTOML(toml)).toEqual({
-      sf1: null,
-      sf2: null,
-      sf3: null,
-      sf4: null,
-      sf5: null,
-      sf6: null,
+      sf1: Infinity,
+      sf2: Infinity,
+      sf3: -Infinity,
+      sf4: NaN,
+      sf5: NaN,
+      sf6: NaN,
     });
   });
 
@@ -254,10 +254,7 @@ animal = { type.name = "pug" }
     expect(parseTOML(toml)).toEqual({
       animal: {
         type: {
-          name: {
-            type: "string",
-            value: "pug",
-          },
+          name: "pug",
         },
       },
       name: {
@@ -287,10 +284,7 @@ type.name = "pug"
     expect(parseTOML(toml)).toEqual({
       animal: {
         type: {
-          name: {
-            type: "string",
-            value: "pug",
-          },
+          name: "pug",
         },
       },
       name: {
@@ -313,10 +307,7 @@ type = { name = "Nail" }
     expect(parseTOML(toml)).toEqual({
       product: {
         type: {
-          name: {
-            type: "string",
-            value: "Nail",
-          },
+          name: "Nail",
         },
       },
     });
@@ -331,10 +322,7 @@ type.name = "Nail"
     expect(parseTOML(toml)).toEqual({
       product: {
         type: {
-          name: {
-            type: "string",
-            value: "Nail",
-          },
+          name: "Nail",
         },
       },
     });
@@ -484,32 +472,14 @@ orange.color = "orange"
 `;
     expect(parseTOML(toml)).toEqual({
       apple: {
-        color: {
-          type: "string",
-          value: "red",
-        },
-        skin: {
-          type: "string",
-          value: "thin",
-        },
-        type: {
-          type: "string",
-          value: "fruit",
-        },
+        color: "red",
+        skin: "thin",
+        type: "fruit",
       },
       orange: {
-        color: {
-          type: "string",
-          value: "orange",
-        },
-        skin: {
-          type: "string",
-          value: "thick",
-        },
-        type: {
-          type: "string",
-          value: "fruit",
-        },
+        color: "orange",
+        skin: "thick",
+        type: "fruit",
       },
     });
   });
@@ -528,32 +498,14 @@ orange.color = "orange"
 `;
     expect(parseTOML(toml)).toEqual({
       apple: {
-        color: {
-          type: "string",
-          value: "red",
-        },
-        skin: {
-          type: "string",
-          value: "thin",
-        },
-        type: {
-          type: "string",
-          value: "fruit",
-        },
+        color: "red",
+        skin: "thin",
+        type: "fruit",
       },
       orange: {
-        color: {
-          type: "string",
-          value: "orange",
-        },
-        skin: {
-          type: "string",
-          value: "thick",
-        },
-        type: {
-          type: "string",
-          value: "fruit",
-        },
+        color: "orange",
+        skin: "thick",
+        type: "fruit",
       },
     });
   });
@@ -651,7 +603,7 @@ odt4 = 1979-05-27 07:32:00Z
 
   test("string-0", () => {
     const toml = `
-str = "I'm a string. \"You can quote me\". Name\tJos\u00E9\nLocation\tSF."
+str = "I'm a string. \\"You can quote me\\". Name\\tJos\\u00E9\\nLocation\\tSF."
 `;
     expect(parseTOML(toml)).toEqual({
       str: 'I\'m a string. "You can quote me". Name\tJosé\nLocation\tSF.',
@@ -672,10 +624,10 @@ Violets are blue"""
   test("string-2", () => {
     const toml = `
 # On a Unix system, the above multi-line string will most likely be the same as:
-str2 = "Roses are red\nViolets are blue"
+str2 = "Roses are red\\nViolets are blue"
 
 # On a Windows system, it will most likely be equivalent to:
-str3 = "Roses are red\r\nViolets are blue"
+str3 = "Roses are red\\r\\nViolets are blue"
 `;
     expect(parseTOML(toml)).toEqual({
       str2: "Roses are red\nViolets are blue",
@@ -689,16 +641,16 @@ str3 = "Roses are red\r\nViolets are blue"
 str1 = "The quick brown fox jumps over the lazy dog."
 
 str2 = """
-The quick brown \
+The quick brown \\
 
 
-  fox jumps over \
+  fox jumps over \\
     the lazy dog."""
 
-str3 = """\
-       The quick brown \
-       fox jumps over \
-       the lazy dog.\
+str3 = """\\
+       The quick brown \\
+       fox jumps over \\
+       the lazy dog.\\
        """
 `;
     expect(parseTOML(toml)).toEqual({
@@ -712,8 +664,8 @@ str3 = """\
     const toml = `
 str4 = """Here are two quotation marks: "". Simple enough."""
 # str5 = """Here are three quotation marks: """."""  # INVALID
-str5 = """Here are three quotation marks: ""\"."""
-str6 = """Here are fifteen quotation marks: ""\"""\"""\"""\"""\"."""
+str5 = """Here are three quotation marks: ""\\"."""
+str6 = """Here are fifteen quotation marks: ""\\"""\\"""\\"""\\"""\\"."""
 
 # "This," she said, "is just a pointless statement."
 str7 = """"This," she said, "is just a pointless statement.""""
@@ -729,10 +681,10 @@ str7 = """"This," she said, "is just a pointless statement.""""
   test("string-5", () => {
     const toml = `
 # What you see is what you get.
-winpath  = 'C:\Users\nodejs\templates'
-winpath2 = '\\ServerX\admin$\system32\'
+winpath  = 'C:\\Users\\nodejs\\templates'
+winpath2 = '\\\\ServerX\\admin$\\system32\\'
 quoted   = 'Tom "Dubs" Preston-Werner'
-regex    = '<\i\c*\s*>'
+regex    = '<\\i\\c*\\s*>'
 `;
     expect(parseTOML(toml)).toEqual({
       quoted: 'Tom "Dubs" Preston-Werner',
@@ -744,7 +696,7 @@ regex    = '<\i\c*\s*>'
 
   test("string-6", () => {
     const toml = `
-regex2 = '''I [dw]on't need \d{2} apples'''
+regex2 = '''I [dw]on't need \\d{2} apples'''
 lines  = '''
 The first newline is
 trimmed in raw strings.
@@ -816,10 +768,7 @@ type.name = "pug"
       dog: {
         "tater.man": {
           type: {
-            name: {
-              type: "string",
-              value: "pug",
-            },
+            name: "pug",
           },
         },
       },
