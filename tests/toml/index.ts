@@ -492,7 +492,7 @@ const ignoreLine = either(comment, peek(newline));
 
 const expression = pair(space0, alt([ignoreLine, keyvalLine, tableLine]));
 
-const toml = pair(expression, more0(pair(newline, expression)));
+const toml = opt(pair(expression, more0(pair(newline, expression))));
 
 export function parseTOML(input: string): TOMLTable {
   rootValue = {};
