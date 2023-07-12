@@ -41,7 +41,6 @@ export const basicUnescaped = (input: string): ParserResult<string> => {
   }
   return {
     ok: false,
-    fatal: false,
     rest: input,
     stack: [],
   };
@@ -62,7 +61,6 @@ export const escaped = (input: string): ParserResult<string> => {
     return {
       ok: false,
       rest: input,
-      fatal: false,
       stack: [
         {
           kind: "unsupported.char",
@@ -90,7 +88,6 @@ export const escaped = (input: string): ParserResult<string> => {
     return {
       ok: false,
       rest: input,
-      fatal: false,
       stack: [
         {
           kind: "invalid.unicode",
@@ -120,7 +117,6 @@ export const escaped = (input: string): ParserResult<string> => {
     return {
       ok: false,
       rest: input,
-      fatal: false,
       stack: [
         {
           kind: "invalid.unicode",
@@ -132,7 +128,6 @@ export const escaped = (input: string): ParserResult<string> => {
   return {
     ok: false,
     rest: input,
-    fatal: false,
     stack: [
       {
         kind: "unknown.escape",
@@ -162,7 +157,6 @@ export const literalChar = (input: string): ParserResult<string> => {
   }
   return {
     ok: false,
-    fatal: false,
     rest: input,
     stack: [],
   };

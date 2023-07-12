@@ -1,27 +1,32 @@
-import { Parser, ErrMessage } from "./types";
+import { Parser, ErrMessage, ParserErrResult } from "./types";
+
+export class RepasError {
+  errRes: ParserErrResult;
+  constructor(errRes: ParserErrResult) {
+    this.errRes = errRes;
+  }
+}
 
 export const fatal =
-  <T>(parser: Parser<T>): Parser<T> =>
-  (input: string, message?: ErrMessage) => {
+  <T>(parser: Parser<T>, message?: ErrMessage): Parser<T> =>
+  (input: string) => {
     const result = parser(input, message);
     if (result.ok) {
       return result;
     }
-    return {
-      ...result,
-      fatal: true,
-    };
+    throw new RepasError(result);
   };
 
-export const nonFatal =
+export const catchFatal =
   <T>(parser: Parser<T>): Parser<T> =>
   (input: string, message?: ErrMessage) => {
-    const result = parser(input, message);
-    if (result.ok) {
+    try {
+      const result = parser(input, message);
       return result;
+    } catch (error) {
+      if (error instanceof RepasError) {
+        return error.errRes;
+      }
+      throw error;
     }
-    return {
-      ...result,
-      fatal: false,
-    };
   };

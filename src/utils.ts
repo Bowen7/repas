@@ -6,24 +6,13 @@ export const fail = (
 ): ParserErrResult => {
   const result: ParserErrResult =
     typeof errRes === "string"
-      ? { ok: false, rest: errRes, fatal: false, stack: [] }
+      ? { ok: false, rest: errRes, stack: [] }
       : { ...errRes };
 
   if (!message) {
     return result;
   }
-  const nextStack = result.stack.slice();
-  result.stack = nextStack;
-
-  if (typeof message === "string") {
-    nextStack.push({ kind: "", value: message });
-  } else {
-    const { fatal, ...msg } = message;
-    if (typeof fatal === "boolean") {
-      result.fatal = fatal;
-    }
-    nextStack.push(msg);
-  }
+  result.stack = [...result.stack, message];
   return result;
 };
 
@@ -53,13 +42,13 @@ export const locate = (
   return { line, column };
 };
 
-export const defaultMsgMap = (msg: { kind: string; value: string }) =>
-  msg.value;
+export const defaultMsgCallback = (msg: ErrMessage) =>
+  typeof msg === "string" ? msg : msg.value;
 
 export const displayErrRes = (
   errRes: ParserErrResult,
   input: string,
-  mapMsg = defaultMsgMap
+  msgCallback = defaultMsgCallback
 ): string => {
   const { line, column } = locate(errRes.rest, input);
   const lines = input.split("\n");
@@ -68,7 +57,7 @@ export const displayErrRes = (
   let message = "\n" + curLine + "\n";
   message += " ".repeat(column) + "^\n";
   message += `at line: ${line}, column: ${column}\n`;
-  message += stack.map(mapMsg).join("\n");
+  message += stack.map(msgCallback).join("\n");
   return message;
 };
 

@@ -1,8 +1,8 @@
-import { Parser, OkParser, ParserResult, ErrMessage } from "./types";
+import { Parser, ParserResult, ErrMessage } from "./types";
 import { fail } from "./utils";
 
 export const msg =
-  <T>(parser: Parser<T>, message: string) =>
+  <T>(parser: Parser<T>, message: ErrMessage) =>
   (input: string) =>
     parser(input, message);
 

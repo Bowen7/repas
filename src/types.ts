@@ -19,17 +19,12 @@ export type ErrMessage =
   | {
       kind: string;
       value: string;
-      fatal?: boolean;
     }
   | string;
 
 export type ParserErrResult = ErrResult<{
-  fatal: boolean;
   rest: string;
-  stack: {
-    kind: string;
-    value: string;
-  }[];
+  stack: ErrMessage[];
 }>;
 
 export type ParserResult<T> = ParserOkResult<T> | ParserErrResult;

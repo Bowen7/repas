@@ -1,6 +1,5 @@
 import {
   CharTestFunc,
-  ParserOkResult,
   ParserErrResult,
   ParserResult,
   Parser,
@@ -109,10 +108,10 @@ export function takeX(
 
 export function more0<T>(
   _parser: Parser<T>
-): (_input: string) => ParserOkResult<T[]>;
+): (_input: string) => ParserResult<T[]>;
 export function more0(
   _testFunc: CharTestFunc
-): (_input: string) => ParserOkResult<string>;
+): (_input: string) => ParserResult<string>;
 export function more0(parser: Parser<unknown> | CharTestFunc): Parser<unknown> {
   return repeat(parser as CharTestFunc, 0, Infinity);
 }
