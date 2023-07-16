@@ -78,7 +78,7 @@ export const delimited = <T1, T2, T3>(
   parser3: Parser<T3>
 ) => {
   const parser = tuple<[T1, T2, T3]>([parser1, parser2, parser3]);
-  return (input: string, message: ErrMessage): ParserResult<T2> => {
+  return (input: string, message?: ErrMessage): ParserResult<T2> => {
     const result = parser(input);
     if (!result.ok) {
       return fail(result, message);

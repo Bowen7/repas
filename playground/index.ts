@@ -3,7 +3,7 @@ console.log(
   JSON.stringify(
     parseTOML(
       `
-      "~  ÿ ퟿  ￿ 𐀀 􏿿" = "basic key"
+      a = 11
 `.trim()
     )
   )
