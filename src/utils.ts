@@ -1,8 +1,10 @@
+import { RepasError } from "./error";
 import { ParserErrResult, ErrMessage, Parser, CharTestFunc } from "./types";
 
 export const fail = (
   errRes: ParserErrResult | string,
-  message?: ErrMessage
+  message?: ErrMessage,
+  fatal = false
 ): ParserErrResult => {
   const result: ParserErrResult =
     typeof errRes === "string"
@@ -13,6 +15,9 @@ export const fail = (
     return result;
   }
   result.stack = [...result.stack, message];
+  if (fatal) {
+    throw new RepasError(result);
+  }
   return result;
 };
 

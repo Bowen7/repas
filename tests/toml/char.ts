@@ -58,16 +58,7 @@ const escapeSeqCharMap = {
 };
 export const escaped = (input: string): ParserResult<string> => {
   if (input[0] !== "\\") {
-    return {
-      ok: false,
-      rest: input,
-      stack: [
-        {
-          kind: "unsupported.char",
-          value: input[0],
-        },
-      ],
-    };
+    return fail(input, "not escape sequence");
   }
   const char = input[1];
   if (char in escapeSeqCharMap) {
@@ -85,16 +76,11 @@ export const escaped = (input: string): ParserResult<string> => {
         value: String.fromCodePoint(parseInt(input.slice(2, 4), 16)),
       };
     }
-    return {
-      ok: false,
-      rest: input,
-      stack: [
-        {
-          kind: "invalid.unicode",
-          value: input.slice(0, isHexDigit(input[2]) ? 3 : 2),
-        },
-      ],
-    };
+    return fail(
+      input,
+      `invalid unicode: ${input.slice(0, isHexDigit(input[2]) ? 3 : 2)}`,
+      true
+    );
   }
   if (char === "u" || char === "U") {
     let len = 0;
@@ -114,27 +100,9 @@ export const escaped = (input: string): ParserResult<string> => {
         value,
       };
     }
-    return {
-      ok: false,
-      rest: input,
-      stack: [
-        {
-          kind: "invalid.unicode",
-          value: input.slice(0, 2 + len),
-        },
-      ],
-    };
+    return fail(input, `invalid unicode: ${input.slice(0, 2 + len)}`, true);
   }
-  return {
-    ok: false,
-    rest: input,
-    stack: [
-      {
-        kind: "unknown.escape",
-        value: input.slice(0, 2),
-      },
-    ],
-  };
+  return fail(input, `unsupported escape sequence: ${input.slice(0, 2)}`, true);
 };
 
 export const basicChar = alt([basicUnescaped, escaped]);
