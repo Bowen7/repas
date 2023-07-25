@@ -11,6 +11,8 @@ import {
   pair,
   either,
   fatal,
+  peek,
+  terminated,
 } from "src";
 import { isDigit07, isDigit01 } from "./char";
 import {
@@ -20,6 +22,10 @@ import {
   hexPrefix,
   octPrefix,
   binPrefix,
+  e,
+  decimalPoint,
+  inf,
+  nan,
 } from "./tag";
 import { stringArrayToString, unexpected } from "./utils";
 
@@ -99,7 +105,45 @@ const binInt = map(
   (value) => parseInt(stringArrayToString(value), 2)
 );
 
-export const integer = map(
+const integer = map(
   alt([hexInt, octInt, binInt, decInt]),
   (value) => value || 0
+);
+
+const floatIntPart = signedDecInt;
+const zeroPrefixableInt = pair(
+  take1(isDigit),
+  more0(alt([take1(isDigit), pair(value(underscore, ""), take1(isDigit))]))
+);
+const floatExpPart = pair(opt(either(plus, minus)), zeroPrefixableInt);
+const exp = pair(e, floatExpPart);
+const frac = pair(decimalPoint, zeroPrefixableInt);
+
+const floatMap = {
+  inf: Infinity,
+  "+inf": Infinity,
+  "-inf": -Infinity,
+  nan: NaN,
+  "+nan": NaN,
+  "-nan": NaN,
+};
+const specialFloat = map(
+  pair(opt(either(plus, minus)), either(inf, nan)),
+  (value): number => {
+    const str = stringArrayToString(value);
+    return floatMap[str as keyof typeof floatMap];
+  }
+);
+
+const float = either(
+  specialFloat,
+  map(
+    pair(floatIntPart, either(exp, pair(frac, opt(exp)))),
+    (value) => parseFloat(stringArrayToString(value)) || 0
+  )
+);
+
+export const number = terminated(
+  peek(alt([plus, minus, take1(isDigit), nan, inf])),
+  fatal(either(float, integer), "unexpected number format")
 );

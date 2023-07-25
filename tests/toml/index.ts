@@ -42,9 +42,8 @@ import {
 } from "./tag";
 import { key } from "./key";
 import { string } from "./string";
-import { float } from "./float";
 import { dateTime } from "./date";
-import { integer } from "./integer";
+import { number } from "./number";
 import { getTableValue, unexpected } from "./utils";
 import { TOMLArray, TOMLValue, TOMLTable } from "./types";
 
@@ -166,9 +165,7 @@ const inlineTable = mapRes(
 );
 
 function val(input: string) {
-  return alt([string, boolean, array, inlineTable, dateTime, float, integer])(
-    input
-  );
+  return alt([string, boolean, array, inlineTable, dateTime, number])(input);
 }
 
 const keyvalLine = mapRes(triplet(keyval, space0, opt(comment)), (result) => {
