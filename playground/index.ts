@@ -1,10 +1,17 @@
 import { parseTOML } from "../tests/toml";
 console.log(
-  JSON.stringify(
-    parseTOML(
-      `
-      a = 11
+  parseTOML(
+    `
+    # INVALID TOML DOC
+    [[fruit]]
+      name = "apple"
+    
+      [[fruit.variety]]
+        name = "red delicious"
+    
+      # This table conflicts with the previous table
+      [fruit.variety]
+        name = "granny smith"
 `.trim()
-    )
   )
 );

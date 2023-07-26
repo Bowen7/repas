@@ -25,7 +25,6 @@ import {
   debug,
   eof,
   catchFatal,
-  ErrMessage,
 } from "src";
 import { isAllowedCommentChar } from "./char";
 import {
@@ -49,6 +48,7 @@ import { TOMLArray, TOMLValue, TOMLTable } from "./types";
 
 let rootValue: TOMLTable = {};
 let currentValue: TOMLTable = rootValue;
+const tableSet = new Set<TOMLArray | TOMLTable>();
 
 // Standard Table
 const stdTable = mapRes(
@@ -58,14 +58,16 @@ const stdTable = mapRes(
       const paths = result.value;
       const res = getTableValue(rootValue, paths);
       if (res.ok) {
-        currentValue = res.value as TOMLTable;
-        return {
-          ...result,
-          value: null,
-        };
-      } else {
-        return fail(result.rest, `key ${key} already exists`);
+        if (!tableSet.has(res.value)) {
+          tableSet.add(res.value);
+          currentValue = res.value as TOMLTable;
+          return {
+            ...result,
+            value: null,
+          };
+        }
       }
+      return fail(result.rest, `duplicate key ${paths.join(",")}`, true);
     }
     return result;
   }
@@ -79,6 +81,7 @@ const arrayTable = mapRes(
       const paths = result.value;
       const res = getTableValue(rootValue, paths, true);
       if (res.ok) {
+        tableSet.add(res.value);
         const newTable: TOMLTable = {};
         (res.value as TOMLArray).push(newTable);
         currentValue = newTable;
@@ -86,9 +89,8 @@ const arrayTable = mapRes(
           ...result,
           value: null,
         };
-      } else {
-        return fail(result.rest, `key ${key} already exists`);
       }
+      return fail(result.rest, `duplicate key ${paths.join(",")}`, true);
     }
     return result;
   }
@@ -121,9 +123,14 @@ const arrayValues = preceded(
   ),
   opt(comma)
 );
+
 const array = map(
-  tuple([arrayOpen, opt(arrayValues), wsCommentNewline, arrayClose]),
-  (value) => value[1] || []
+  tuple([
+    arrayOpen,
+    opt(arrayValues),
+    fatal(pair(wsCommentNewline, arrayClose), 'expected array close "]"'),
+  ]),
+  (value) => Object.freeze(value[1] || [])
 ) as Parser<TOMLArray>;
 
 // Inline Table
@@ -154,7 +161,7 @@ const inlineTable = mapRes(
         if (res.ok) {
           (res.value as TOMLTable)[lastPath!] = val;
         } else {
-          return fail(result.rest, `key ${key} already exists`);
+          return fail(result.rest, `key ${key} already exists`, true);
         }
       }
       Object.freeze(table);
@@ -180,7 +187,7 @@ const keyvalLine = mapRes(triplet(keyval, space0, opt(comment)), (result) => {
         value: null,
       };
     } else {
-      return fail(result.rest, `key ${key} already exists`);
+      return fail(result.rest, `key ${key} already exists`, true);
     }
   }
   return result;
@@ -188,7 +195,7 @@ const keyvalLine = mapRes(triplet(keyval, space0, opt(comment)), (result) => {
 
 const tableLine = triplet(table, space0, opt(comment));
 
-const ignoreLine = either(comment, either(debug(peek(newline)), eof));
+const ignoreLine = either(comment, either(peek(newline), eof));
 
 const expression = pair(space0, alt([ignoreLine, keyvalLine, tableLine]));
 
@@ -197,9 +204,10 @@ const toml = catchFatal(pair(expression, more0(pair(newline, expression))));
 export function parseTOML(input: string): TOMLTable {
   rootValue = {};
   currentValue = rootValue;
+  tableSet.clear();
   const result = toml(input);
   if (!result.ok) {
-    throw new Error(displayErrRes(result, input));
+    throw new SyntaxError(displayErrRes(result, input));
   }
   return rootValue;
 }

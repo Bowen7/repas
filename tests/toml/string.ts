@@ -12,6 +12,8 @@ import {
   map,
   pair,
   either,
+  terminated,
+  peek,
 } from "src";
 import {
   questionMark,
@@ -41,7 +43,7 @@ const mlbEscapedNl = map(
   tuple([escape, space0, newline, more0(either(space, newline))]),
   () => ""
 );
-const mlbContent = alt([basicChar, newline, mlbEscapedNl]);
+const mlbContent = alt([mlbEscapedNl, basicChar, newline]);
 const mlbQuotes = repeat(questionMark, 1, 2);
 
 const mlBasicBody = map(
@@ -83,10 +85,15 @@ const mlLiteralString = map(
   ([, , body, closeDelim]) => body + closeDelim
 );
 
-// String
-export const string = alt([
+const _string = alt([
   mlBasicString,
   mlLiteralString,
   basicString,
   literalString,
 ]);
+
+// String
+export const string = terminated(
+  peek(either(apostrophe, questionMark)),
+  _string
+);
