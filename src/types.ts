@@ -15,26 +15,14 @@ export type ParserOkResult<T> = OkResult<{
   value: T;
 }>;
 
-export type ErrMessage =
-  | {
-      kind: string;
-      value: string;
-    }
-  | string;
-
 export type ParserErrResult = ErrResult<{
   rest: string;
-  stack: ErrMessage[];
+  stack: {
+    input: string;
+    message: string;
+  }[];
 }>;
 
 export type ParserResult<T> = ParserOkResult<T> | ParserErrResult;
 
-export type OkParser<T> = (
-  _input: string,
-  _message?: ErrMessage
-) => ParserOkResult<T>;
-
-export type Parser<T> = (
-  _input: string,
-  _message?: ErrMessage
-) => ParserResult<T>;
+export type Parser<T> = (_input: string, _message?: string) => ParserResult<T>;
