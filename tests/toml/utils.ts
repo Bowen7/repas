@@ -1,4 +1,4 @@
-import { ErrMessage, Result } from "src";
+import { Result } from "src";
 import { TOMLArray, TOMLTable } from "./types";
 
 type StringArray = (StringArray | string)[];
@@ -7,11 +7,6 @@ export const stringArrayToString = (array: StringArray): string =>
   array
     .map((item) => (Array.isArray(item) ? stringArrayToString(item) : item))
     .join("");
-
-export const unexpected = (value: string): ErrMessage => ({
-  kind: "unexpected",
-  value,
-});
 
 export const getTableValue = (
   table: TOMLTable,

@@ -1,4 +1,4 @@
-import { Parser, ParserResult, ParserErrResult, ErrMessage } from "./types";
+import { Parser, ParserResult, ParserErrResult } from "./types";
 import { fail } from "./utils";
 
 // 2 parsers
@@ -40,7 +40,7 @@ export function alt<T extends unknown[]>(_parsers: {
 export function alt<T extends unknown[]>(parsers: {
   [K in keyof T]: Parser<T[K]>;
 }): Parser<T[number]> {
-  return (input: string, message?: ErrMessage): ParserResult<T[number]> => {
+  return (input: string, message?: string): ParserResult<T[number]> => {
     let errRes: ParserErrResult;
     for (const parser of parsers) {
       const result = parser(input);
@@ -53,7 +53,7 @@ export function alt<T extends unknown[]>(parsers: {
       }
       errRes = result;
     }
-    return fail(errRes!, message);
+    return fail(errRes!, input, message);
   };
 }
 

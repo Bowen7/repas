@@ -1,4 +1,4 @@
-import { Parser, ParserResult, ErrMessage } from "./types";
+import { Parser, ParserResult } from "./types";
 import { fail } from "./utils";
 import { map } from "./modifier";
 
@@ -42,13 +42,13 @@ export function tuple<T extends unknown[]>(_parsers: {
 export function tuple<T extends unknown[]>(parsers: {
   [K in keyof T]: Parser<T[K]>;
 }): Parser<T> {
-  return (input: string, message?: ErrMessage): ParserResult<T> => {
+  return (input: string, message?: string): ParserResult<T> => {
     let rest = input;
     const value: unknown[] = [];
     for (const parser of parsers) {
       const result = (parser as Parser<unknown>)(rest);
       if (!result.ok) {
-        return fail(result, message);
+        return fail(result, input, message);
       }
       rest = result.rest;
       value.push(result.value);
@@ -78,10 +78,10 @@ export const delimited = <T1, T2, T3>(
   parser3: Parser<T3>
 ) => {
   const parser = tuple<[T1, T2, T3]>([parser1, parser2, parser3]);
-  return (input: string, message?: ErrMessage): ParserResult<T2> => {
+  return (input: string, message?: string): ParserResult<T2> => {
     const result = parser(input);
     if (!result.ok) {
-      return fail(result, message);
+      return fail(result, input, message);
     }
     return {
       ok: true,

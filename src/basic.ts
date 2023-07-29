@@ -1,9 +1,9 @@
-import { ParserResult, ErrMessage } from "./types";
+import { ParserResult } from "./types";
 import { fail } from "./utils";
 
 export const tag =
   (str: string) =>
-  (input: string, message?: ErrMessage): ParserResult<string> => {
+  (input: string, message?: string): ParserResult<string> => {
     if (str === input.slice(0, str.length)) {
       return {
         ok: true,
@@ -15,7 +15,7 @@ export const tag =
   };
 
 export const regex = (r: RegExp) => {
-  return (input: string, message?: ErrMessage): ParserResult<string> => {
+  return (input: string, message?: string): ParserResult<string> => {
     const m = input.match(r);
     if (m) {
       return {
@@ -33,7 +33,7 @@ export const oneOf = (str: string) => {
   for (const c of str) {
     map[c] = true;
   }
-  return (input: string, message?: ErrMessage): ParserResult<string> => {
+  return (input: string, message?: string): ParserResult<string> => {
     const char = input[0];
     if (char in map) {
       return {

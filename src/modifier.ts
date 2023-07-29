@@ -1,8 +1,7 @@
-import { Parser, ParserResult, ErrMessage } from "./types";
-import { fail } from "./utils";
+import { Parser, ParserResult } from "./types";
 
 export const msg =
-  <T>(parser: Parser<T>, message: ErrMessage) =>
+  <T>(parser: Parser<T>, message: string) =>
   (input: string) =>
     parser(input, message);
 
@@ -10,7 +9,7 @@ export function map<T, R>(
   parser: Parser<T>,
   mapper: (_value: T) => R
 ): Parser<R> {
-  return (input: string, message?: ErrMessage) => {
+  return (input: string, message?: string) => {
     const result = parser(input, message);
     if (!result.ok) {
       return result;
@@ -26,7 +25,7 @@ export function mapRes<T, R>(
   parser: Parser<T>,
   mapper: (_value: ParserResult<T>) => ParserResult<R>
 ): Parser<R> {
-  return (input: string, message?: ErrMessage) => {
+  return (input: string, message?: string) => {
     const result = parser(input, message);
     return mapper(result);
   };
@@ -82,10 +81,10 @@ export function peek<T>(parser: Parser<T>) {
 
 export const value =
   <T, V>(parser: Parser<T>, val: V) =>
-  (input: string, message?: ErrMessage): ParserResult<V> => {
-    const result = parser(input);
+  (input: string, message?: string): ParserResult<V> => {
+    const result = parser(input, message);
     if (!result.ok) {
-      return fail(result, message);
+      return result;
     }
     return {
       ...result,

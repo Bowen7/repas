@@ -43,7 +43,7 @@ import { key } from "./key";
 import { string } from "./string";
 import { dateTime } from "./date";
 import { number } from "./number";
-import { getTableValue, unexpected } from "./utils";
+import { getTableValue } from "./utils";
 import { TOMLArray, TOMLValue, TOMLTable } from "./types";
 
 let rootValue: TOMLTable = {};

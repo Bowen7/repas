@@ -1,15 +1,9 @@
-import {
-  CharTestFunc,
-  ParserErrResult,
-  ParserResult,
-  Parser,
-  ErrMessage,
-} from "./types";
+import { CharTestFunc, ParserErrResult, ParserResult, Parser } from "./types";
 import { fail } from "./utils";
 
 export const repeatParser =
   <T>(parser: Parser<T>, min: number, max: number) =>
-  (input: string, message?: ErrMessage): ParserResult<T[]> => {
+  (input: string, message?: string): ParserResult<T[]> => {
     let rest = input;
     let count = 0;
     const value: T[] = [];
@@ -28,7 +22,7 @@ export const repeatParser =
       }
     }
     if (value.length < min) {
-      return fail(errRes!, message);
+      return fail(errRes!, input, message);
     }
     return {
       ok: true,
@@ -39,7 +33,7 @@ export const repeatParser =
 
 export const repeatTestFunc =
   (testFunc: CharTestFunc, min: number, max: number) =>
-  (input: string, message?: ErrMessage): ParserResult<string> => {
+  (input: string, message?: string): ParserResult<string> => {
     let i = 0;
     let count = 0;
     while (i < input.length) {
@@ -88,10 +82,7 @@ export function repeat<T>(
   return repeatParser(parser as Parser<T>, min, max);
 }
 
-export function take1<T>(
-  _parser: Parser<T>,
-  _message?: ErrMessage
-): Parser<T[]>;
+export function take1<T>(_parser: Parser<T>, _message?: string): Parser<T[]>;
 export function take1(_testFunc: CharTestFunc): Parser<string>;
 export function take1(parser: Parser<unknown> | CharTestFunc): Parser<unknown> {
   return repeat(parser as CharTestFunc, 1, 1);
@@ -116,10 +107,7 @@ export function more0(parser: Parser<unknown> | CharTestFunc): Parser<unknown> {
   return repeat(parser as CharTestFunc, 0, Infinity);
 }
 
-export function more1<T>(
-  _parser: Parser<T>,
-  _message?: ErrMessage
-): Parser<T[]>;
+export function more1<T>(_parser: Parser<T>, _message?: string): Parser<T[]>;
 export function more1(_testFunc: CharTestFunc): Parser<string>;
 export function more1(parser: Parser<unknown> | CharTestFunc): Parser<unknown> {
   return repeat(parser as CharTestFunc, 1, Infinity);

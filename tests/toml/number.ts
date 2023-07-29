@@ -27,7 +27,7 @@ import {
   inf,
   nan,
 } from "./tag";
-import { stringArrayToString, unexpected } from "./utils";
+import { stringArrayToString } from "./utils";
 
 const unsignedDecInt = either(
   pair(
@@ -61,7 +61,7 @@ const hexInt = map(
           )
         )
       ),
-      unexpected("hexadecimal integer")
+      "unexpected hexadecimal integer format"
     )
   ),
   (value) => parseInt(stringArrayToString(value), 16)
@@ -80,7 +80,7 @@ const octInt = map(
           )
         )
       ),
-      unexpected("octal integer")
+      "unexpected hexadecimal octal format"
     )
   ),
   (value) => parseInt(stringArrayToString(value), 8)
@@ -99,7 +99,7 @@ const binInt = map(
           )
         )
       ),
-      unexpected("binary integer")
+      "unexpected hexadecimal binary format"
     )
   ),
   (value) => parseInt(stringArrayToString(value), 2)

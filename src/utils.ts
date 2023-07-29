@@ -1,29 +1,45 @@
 import { RepasError } from "./error";
-import { ParserErrResult, ErrMessage, Parser, CharTestFunc } from "./types";
+import { ParserErrResult, Parser, CharTestFunc } from "./types";
 
-export const fail = (
-  errRes: ParserErrResult | string,
-  message?: ErrMessage,
-  fatal = false
-): ParserErrResult => {
+export function fail(
+  input: string,
+  message?: string,
+  fatal?: boolean
+): ParserErrResult;
+export function fail(
+  errRes: ParserErrResult,
+  input: string,
+  message?: string,
+  fatal?: boolean
+): ParserErrResult;
+export function fail(
+  arg0: ParserErrResult | string,
+  arg1?: string,
+  arg2?: boolean | string,
+  arg3?: boolean
+): ParserErrResult {
   const result: ParserErrResult =
-    typeof errRes === "string"
-      ? { ok: false, rest: errRes, stack: [] }
-      : { ...errRes };
-
-  if (!message) {
+    typeof arg0 === "string"
+      ? { ok: false, rest: arg0, stack: [] }
+      : { ...arg0 };
+  const input = (typeof arg0 === "string" ? arg0 : arg1)!;
+  const message = (typeof arg0 === "string" ? arg1 : arg2) as
+    | string
+    | undefined;
+  if (message === undefined) {
     return result;
   }
-  result.stack = [...result.stack, message];
+  const fatal = !!(typeof arg0 === "string" ? arg2 : arg3);
+  result.stack = [...result.stack, { input, message }];
   if (fatal) {
     throw new RepasError(result);
   }
   return result;
-};
+}
 
 export const debug =
   <T>(parser: Parser<T>, name?: string): Parser<T> =>
-  (input: string, message?: ErrMessage) => {
+  (input: string, message?: string) => {
     const result = parser(input, message);
     if (name) {
       console.log(name + ":", result);
@@ -47,23 +63,17 @@ export const locate = (
   return { line, column };
 };
 
-export const defaultMsgCallback = (msg: ErrMessage) =>
-  typeof msg === "string" ? msg : msg.value;
-
+// TODO
 export const displayErrRes = (
   errRes: ParserErrResult,
-  input: string,
-  msgCallback = defaultMsgCallback
+  source: string
 ): string => {
-  const { line, column } = locate(errRes.rest, input);
-  const lines = input.split("\n");
-  const stack = errRes.stack;
-  const curLine = lines[line];
-  let message = "\n" + curLine + "\n";
-  message += " ".repeat(column) + "^\n";
-  message += `at line: ${line}, column: ${column}\n`;
-  message += stack.map(msgCallback).join("\n");
-  return message;
+  const { stack } = errRes;
+  const lines = source.split("\n");
+  stack.forEach(({ input, message }) => {
+    const { line, column } = locate(input, source);
+  });
+  return "";
 };
 
 export type Range = [string, string] | string;
