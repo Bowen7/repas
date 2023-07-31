@@ -21,7 +21,7 @@ import {
   terminated,
   separatedPair,
   fatal,
-  displayErrRes,
+  printErrRes,
   debug,
   eof,
   catchFatal,
@@ -207,7 +207,7 @@ export function parseTOML(input: string): TOMLTable {
   tableSet.clear();
   const result = toml(input);
   if (!result.ok) {
-    throw new SyntaxError(displayErrRes(result, input));
+    throw new SyntaxError(printErrRes(result, input));
   }
   return rootValue;
 }

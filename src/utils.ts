@@ -55,23 +55,56 @@ export const locate = (
 ): {
   line: number;
   column: number;
+  index: number;
 } => {
   const index = input.length - rest.length;
   const lines = input.slice(0, index).split("\n");
   const line = lines.length - 1;
   const column = lines[line].length;
-  return { line, column };
+  return { line, column, index };
 };
 
-// TODO
-export const displayErrRes = (
+const isBrowser =
+  (typeof window !== "undefined" && typeof window.document !== "undefined") ||
+  (typeof self === "object" &&
+    self.constructor &&
+    self.constructor.name === "DedicatedWorkerGlobalScope");
+
+const printHighlightErrCode = (
+  startCode: string,
+  errCode: string,
+  endCode: string
+) => {
+  if (isBrowser) {
+    console.log("%s%c%s%c%s", startCode, "color:red;", errCode, "", endCode);
+  } else {
+    console.log("%s\x1b[31m%s\x1b[0m%s", startCode, errCode, endCode);
+  }
+};
+
+export const printErrRes = (
   errRes: ParserErrResult,
   source: string
 ): string => {
-  const { stack } = errRes;
+  const { stack, rest } = errRes;
   const lines = source.split("\n");
   stack.forEach(({ input, message }) => {
-    const { line, column } = locate(input, source);
+    const {
+      line: inputLine,
+      column: inputColumn,
+      index: inputIndex,
+    } = locate(input, source);
+    const {
+      line: restLine,
+      column: restColumn,
+      index: restIndex,
+    } = locate(rest, source);
+    const startCode = lines[inputLine].slice(0, inputColumn);
+    const errCode = source.slice(inputIndex, restIndex + 1);
+    const endCode = lines[restLine].slice(restColumn + 1);
+    printHighlightErrCode(startCode, errCode, endCode);
+    console.log(message);
+    console.log("at line", inputLine + 1, "column", inputColumn + 1);
   });
   return "";
 };
