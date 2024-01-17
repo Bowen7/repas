@@ -1,4 +1,4 @@
-import { parseTOML } from "../tests/toml";
+import { parseTOML } from "../examples/toml";
 console.log(
   parseTOML(
     `

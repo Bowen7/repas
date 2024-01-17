@@ -11,7 +11,7 @@
     "noUnusedParameters": false,
     "preserveWatchOutput": true,
     "target": "es2016",
-    "module": "esnext",
+    "module": "NodeNext",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
@@ -19,6 +19,6 @@
     "moduleResolution": "nodenext",
     "baseUrl": "."
   },
-  "include": ["src", "tests", "playground"],
+  "include": ["src", "examples", "playground"],
   "exclude": ["node_modules"]
 }
