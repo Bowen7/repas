@@ -1,0 +1,3 @@
+[submodule "examples/toml/toml-test"]
+	path = examples/toml/toml-test
+	url = git@github.com:toml-lang/toml-test.git
